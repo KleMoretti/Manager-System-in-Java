@@ -7,23 +7,33 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         int choice = 0;
         String name, number;
+
         while (true) {
-            System.out.println("Please input your name:");
-            name = scanner.nextLine();
-            System.out.println("Please input your number:");
-            number = scanner.nextLine();
-            user = DataProcessing.search(name, number);
-            if (user == null) {
-                System.out.println("Invalid user");
-                continue;
-            } else {
+            System.out.println("Welcome to the system\n" +
+                    "1.Log in\n" + "2.Exit\n");
+            int login = scanner.nextInt();
+            scanner.nextLine();
+            if (login == 2) {
+                System.out.println("Exit system");
+                break;
+            }
+            else if(login == 1) {
                 while (true) {
-                    user.showMenu();
-                    SelectMenu(user);
+                    System.out.println("Please input your name:");
+                    name = scanner.nextLine();
+                    System.out.println("Please input your number:");
+                    number = scanner.nextLine();
+                    user = DataProcessing.search(name, number);
+                    if (user == null) {
+                        System.out.println("Invalid user");
+                    } else {
+                        while (true) {
+                            user.showMenu();
+                            SelectMenu(user);
+                        }
+                    }
                 }
             }
-
-
         }
     }
 
