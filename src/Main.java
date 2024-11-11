@@ -125,7 +125,7 @@ public class Main {
                         //changePassword
                         browser.changeSelfInfo("password");
                         break;
-                    case 5:
+                    case 4:
                         //exit
                         browser.exitSystem();
                         break;

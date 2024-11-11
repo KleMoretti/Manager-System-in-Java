@@ -78,7 +78,7 @@ public class Administrator extends User {
         Enumeration e= DataProcessing.getAllUser();
         while (e.hasMoreElements()) {
             User element = (User) e.nextElement();
-            System.out.println(element);
+            System.out.println(element.getRole()+"\t\t\t"+element.getName());
         }
     }
 
