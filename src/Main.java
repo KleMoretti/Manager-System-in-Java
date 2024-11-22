@@ -10,7 +10,6 @@ import java.util.Scanner;
 @SuppressWarnings("InfiniteLoopStatement")
 public class Main {
     public static void main(String[] args) throws SQLException, IOException {
-        DataProcessing.init();
         AbstractUser user;
         Scanner scanner = new Scanner(System.in);
         String name, number;

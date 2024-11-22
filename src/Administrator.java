@@ -1,4 +1,4 @@
-import java.io.IOException;
+import java.io.*;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -17,9 +17,9 @@ public class Administrator extends AbstractUser {
         System.out.println("2. Delete user information");
         System.out.println("3. Change user information");
         System.out.println("4. List all user information");
-        System.out.println("5.Download user's file");
-        System.out.println("6.List all user's file");
-        System.out.println("7.Change password");
+        System.out.println("5. Download user's file");
+        System.out.println("6. List all user's file");
+        System.out.println("7. Change password");
         System.out.println("8. Exit system");
 
         Scanner input = new Scanner(System.in);
@@ -56,10 +56,15 @@ public class Administrator extends AbstractUser {
                 }
                 break;
             case 5:
+                String id;
+                System.out.println("Please input the id you want to download:");
+                id = input.nextLine();
                 try {
-                    downloadFile("file");
+                    downloadFile(id);
                 } catch (IOException e) {
                     System.out.println("Cannot download file "+e.getMessage());
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
                 }
                 break;
             case 6:

@@ -1,4 +1,6 @@
-import java.util.*;
+import java.io.*;
+import java.util.Enumeration;
+import java.util.Hashtable;
 import java.sql.*;
 
 /**
@@ -9,9 +11,9 @@ import java.sql.*;
  */
 public class DataProcessing {
     private static boolean connectToDB = false;
-    static final double EXCEPTION_CONNECT_PROBABILITY = 0.1;
-    static final double EXCEPTION_SQL_PROBABILITY = 0.9;
+
     static Hashtable<String, AbstractUser> users;
+    static Hashtable<String, Doc> docs;
 
     static enum ROLE_ENUM {
         /**
@@ -40,9 +42,40 @@ public class DataProcessing {
 
     static {
         users = new Hashtable<String, AbstractUser>();
-        users.put("jack", new Operator("jack", "123", "operator"));
         users.put("rose", new Browser("rose", "123", "browser"));
+        users.put("jack", new Operator("jack", "123", "operator"));
         users.put("kate", new Administrator("kate", "123", "administrator"));
+        try {
+            init();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
+        docs = new Hashtable<String, Doc>();
+        FileReader filerader= null;
+        try {
+            filerader = new FileReader("uploadfile\\Doc.txt");
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        BufferedReader br=new BufferedReader(filerader);
+        String line;
+        try {
+            while ((line = br.readLine()) != null) {
+                String[] temp = line.split(" ");
+                Timestamp timestamp = Timestamp.valueOf(temp[2]+" "+temp[3]);
+                docs.put(temp[0], new Doc(temp[0], temp[1], timestamp, temp[4], temp[5]));
+            }
+        }  catch (IllegalArgumentException | IOException e) {
+            System.err.println("Invalid timestamp format in line: ");
+            e.printStackTrace();
+        }
+        try {
+            br.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -52,13 +85,68 @@ public class DataProcessing {
      * @return void
      * @throws
      */
-    public static void init() {
-// update database connection status
-        double ranValue = Math.random();
-        if (ranValue > EXCEPTION_CONNECT_PROBABILITY) {
-            connectToDB = true;
+    public static void init() throws IOException {
+        connectToDB = true;
+    }
+
+    /**
+     * TODO 按档案编号搜索档案信息，返回null时表明未找到
+     *
+     * @param id
+     * @return Doc
+     * @throws SQLException
+     */
+    public static Doc searchDoc(String id) throws SQLException {
+        if (!connectToDB) {
+            throw new SQLException("Not Connected to Database");
+        }
+        if (docs.containsKey(id)) {
+            Doc temp = docs.get(id);
+            return temp;
+        }
+        return null;
+    }
+
+    /**
+     * TODO 列出所有档案信息
+     *
+     * @param
+     * @return Enumeration<Doc>
+     * @throws SQLException
+     */
+    public static Enumeration<Doc> listDoc() throws SQLException {
+        if (!connectToDB) {
+            throw new SQLException("Not Connected to Database");
+        }
+
+        Enumeration<Doc> e = docs.elements();
+        return e;
+    }
+
+    /**
+     * TODO 插入新的档案
+     *
+     * @param id
+     * @param creator
+     * @param timestamp
+     * @param description
+     * @param filename
+     * @return boolean
+     * @throws SQLException
+     */
+    public static boolean insertDoc(String id, String creator, Timestamp timestamp, String description, String filename) throws SQLException {
+        Doc doc;
+
+        if (!connectToDB) {
+            throw new SQLException("Not Connected to Database");
+        }
+
+        if (docs.containsKey(id)) {
+            return false;
         } else {
-            connectToDB = false;
+            doc = new Doc(id, creator, timestamp, description, filename);
+            docs.put(id, doc);
+            return true;
         }
     }
 
@@ -73,10 +161,7 @@ public class DataProcessing {
         if (!connectToDB) {
             throw new SQLException("Not Connected to Database");
         }
-        double ranValue = Math.random();
-        if (ranValue > EXCEPTION_SQL_PROBABILITY) {
-            throw new SQLException("Error in excecuting Query");
-        }
+
         if (users.containsKey(name)) {
             return users.get(name);
         }
@@ -95,10 +180,7 @@ public class DataProcessing {
         if (!connectToDB) {
             throw new SQLException("Not Connected to Database");
         }
-        double ranValue = Math.random();
-        if (ranValue > EXCEPTION_SQL_PROBABILITY) {
-            throw new SQLException("Error in excecuting Query");
-        }
+
         if (users.containsKey(name)) {
             AbstractUser temp = users.get(name);
             if ((temp.getPassword()).equals(password)) {
@@ -119,10 +201,7 @@ public class DataProcessing {
         if (!connectToDB) {
             throw new SQLException("Not Connected to Database");
         }
-        double ranValue = Math.random();
-        if (ranValue > EXCEPTION_SQL_PROBABILITY) {
-            throw new SQLException("Error in excecuting Query");
-        }
+
         Enumeration<AbstractUser> e = users.elements();
         return e;
     }
@@ -138,13 +217,6 @@ public class DataProcessing {
      */
     public static boolean updateUser(String name, String password, String role) throws SQLException {
         AbstractUser user;
-        if (!connectToDB) {
-            throw new SQLException("Not Connected to Database");
-        }
-        double ranValue = Math.random();
-        if (ranValue > EXCEPTION_SQL_PROBABILITY) {
-            throw new SQLException("Error in excecuting Update");
-        }
         if (users.containsKey(name)) {
             switch (ROLE_ENUM.valueOf(role.toLowerCase())) {
                 case administrator:
@@ -174,13 +246,6 @@ public class DataProcessing {
      */
     public static boolean insertUser(String name, String password, String role) throws SQLException {
         AbstractUser user;
-        if (!connectToDB) {
-            throw new SQLException("Not Connected to Database");
-        }
-        double ranValue = Math.random();
-        if (ranValue > EXCEPTION_SQL_PROBABILITY) {
-            throw new SQLException("Error in excecuting Insert");
-        }
         if (users.containsKey(name)) {
             return false;
         } else {
@@ -207,13 +272,6 @@ public class DataProcessing {
      * @throws SQLException
      */
     public static boolean deleteUser(String name) throws SQLException {
-        if (!connectToDB) {
-            throw new SQLException("Not Connected to Database");
-        }
-        double ranValue = Math.random();
-        if (ranValue > EXCEPTION_SQL_PROBABILITY) {
-            throw new SQLException("Error in excecuting Delete");
-        }
         if (users.containsKey(name)) {
             users.remove(name);
             return true;
@@ -233,16 +291,12 @@ public class DataProcessing {
         if (connectToDB) {
 // close Statement and Connection
             try {
-                if (Math.random() > EXCEPTION_SQL_PROBABILITY) {
-                    throw new SQLException("Error in disconnecting DB");
-                }
-            } catch (SQLException sqlException) {
-                sqlException.printStackTrace();
             } finally {
                 connectToDB = false;
             }
         }
     }
+
 
     public static void main(String[] args) {
     }
