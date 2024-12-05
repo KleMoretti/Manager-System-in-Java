@@ -1,3 +1,5 @@
+package console;
+
 import java.sql.Timestamp;
 
 /**
@@ -6,7 +8,7 @@ import java.sql.Timestamp;
  * @author gongjing
  * @date 2016/10/13
  */
-class  Doc implements java.io.Serializable {
+public class  Doc implements java.io.Serializable {
     private  String id;
     private  String creator;
     private  Timestamp timestamp;

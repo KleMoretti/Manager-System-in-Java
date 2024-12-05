@@ -1,3 +1,5 @@
+package console;
+
 import java.io.*;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -50,12 +52,30 @@ public class DataProcessing {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-
+        Timestamp timestamp = new  Timestamp(System.currentTimeMillis());
         docs = new Hashtable<String, Doc>();
+        docs.put("0001",new  Doc("0001","jack",timestamp,"console.Doc Source Java",
+                "Doc.java"));
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(
+                "D:\\@Java\\Object-oriented and multithreaded comprehensive experiment\\Manager System\\uploadfile\\doc.ser"))) {
+            while (true) {
+                try {
+                    Doc doc = (Doc) ois.readObject();
+                    docs.put(doc.getId(), doc);
+                } catch (EOFException e) {
+                    break; // End of file reached
+                }
+            }
+        } catch (FileNotFoundException e) {
+            System.err.println("File not found: " + e.getMessage());
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Error reading file: " + e.getMessage());
+        }
+       /* docs = new Hashtable<String, console.Doc>();
         FileReader filerader= null;
         try {
-            filerader = new FileReader("uploadfile\\Doc.txt");
+            filerader = new FileReader("uploadfile\\console.Doc.txt");
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -65,7 +85,7 @@ public class DataProcessing {
             while ((line = br.readLine()) != null) {
                 String[] temp = line.split(" ");
                 Timestamp timestamp = Timestamp.valueOf(temp[2]+" "+temp[3]);
-                docs.put(temp[0], new Doc(temp[0], temp[1], timestamp, temp[4], temp[5]));
+                docs.put(temp[0], new console.Doc(temp[0], temp[1], timestamp, temp[4], temp[5]));
             }
         }  catch (IllegalArgumentException | IOException e) {
             System.err.println("Invalid timestamp format in line: ");
@@ -75,7 +95,7 @@ public class DataProcessing {
             br.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }
+        }*/
     }
 
     /**
@@ -93,7 +113,7 @@ public class DataProcessing {
      * TODO 按档案编号搜索档案信息，返回null时表明未找到
      *
      * @param id
-     * @return Doc
+     * @return console.Doc
      * @throws SQLException
      */
     public static Doc searchDoc(String id) throws SQLException {
@@ -111,7 +131,7 @@ public class DataProcessing {
      * TODO 列出所有档案信息
      *
      * @param
-     * @return Enumeration<Doc>
+     * @return Enumeration<console.Doc>
      * @throws SQLException
      */
     public static Enumeration<Doc> listDoc() throws SQLException {
@@ -154,7 +174,7 @@ public class DataProcessing {
      * TODO 按用户名搜索用户，返回null时表明未找到符合条件的用户
      *
      * @param name 用户名
-     * @return AbstractUser
+     * @return console.AbstractUser
      * @throws SQLException
      */
     public static AbstractUser searchUser(String name) throws SQLException {
@@ -173,7 +193,7 @@ public class DataProcessing {
      *
      * @param name     用户名
      * @param password 密码
-     * @return AbstractUser
+     * @return console.AbstractUser
      * @throws SQLException
      */
     public static AbstractUser searchUser(String name, String password) throws SQLException {
@@ -194,7 +214,7 @@ public class DataProcessing {
      * TODO 取出所有的用户
      *
      * @param
-     * @return Enumeration<AbstractUser>
+     * @return Enumeration<console.AbstractUser>
      * @throws SQLException
      */
     public static Enumeration<AbstractUser> listUser() throws SQLException {

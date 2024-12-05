@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="GUI.FileBrowsingFrame">
+  <grid id="27dc6" binding="FileBrowsingFrame" layout-manager="GridBagLayout">
+    <constraints>
+      <xy x="25" y="20" width="359" height="332"/>
+    </constraints>
+    <properties>
+      <minimumSize width="100" height="100"/>
+      <toolTipText value="top"/>
+    </properties>
+    <border type="empty" title-justification="2"/>
+    <children>
+      <grid id="541b5" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false">
+            <preferred-size width="24" height="75"/>
+          </grid>
+          <gridbag weightx="1.0" weighty="0.1"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="922d0" class="javax.swing.JLabel" binding="PersonInfoLabel">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <font size="18"/>
+              <text value="Name:"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <grid id="a3de0" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+          <gridbag weightx="1.0" weighty="6.0"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <tabbedpane id="e6a5c" binding="tabbedPane1" default-binding="true">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                <preferred-size width="100" height="100"/>
+              </grid>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <grid id="c2932" binding="userManagerPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+                <constraints>
+                  <tabbedpane title="UserManager"/>
+                </constraints>
+                <properties>
+                  <font name="Arial Black" size="18"/>
+                </properties>
+                <border type="none"/>
+                <children>
+                  <component id="36194" class="javax.swing.JList" binding="UserManagerJList">
+                    <constraints border-constraint="West"/>
+                    <properties>
+                      <background color="-2362630"/>
+                      <font name="Britannic Bold" size="18"/>
+                      <layoutOrientation value="0"/>
+                      <model>
+                        <item value="change"/>
+                        <item value="delete"/>
+                        <item value="add"/>
+                      </model>
+                      <preferredSize width="100" height="100"/>
+                    </properties>
+                  </component>
+                  <grid id="833b1" binding="UserManagerCardLayoutPanel" layout-manager="CardLayout" hgap="0" vgap="0">
+                    <constraints border-constraint="Center"/>
+                    <properties/>
+                    <border type="none"/>
+                    <children/>
+                  </grid>
+                </children>
+              </grid>
+              <grid id="6e530" binding="fileManagerPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+                <constraints>
+                  <tabbedpane title="FileManager"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <component id="3fa32" class="javax.swing.JList" binding="FileManagerJList">
+                    <constraints border-constraint="West"/>
+                    <properties>
+                      <background color="-2362630"/>
+                      <font name="Britannic Bold" size="18"/>
+                      <layoutOrientation value="0"/>
+                      <model>
+                        <item value="upload"/>
+                        <item value="download"/>
+                      </model>
+                      <preferredSize width="100" height="100"/>
+                    </properties>
+                  </component>
+                  <grid id="8a6f3" binding="FileManagerCardLayoutPanel" layout-manager="CardLayout" hgap="0" vgap="0">
+                    <constraints border-constraint="Center"/>
+                    <properties/>
+                    <border type="none"/>
+                    <children/>
+                  </grid>
+                </children>
+              </grid>
+              <grid id="3d959" binding="personInfoPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+                <constraints>
+                  <tabbedpane title="PersonalInfo Change"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <component id="ff68c" class="javax.swing.JList" binding="PersonInfoJList">
+                    <constraints border-constraint="West"/>
+                    <properties>
+                      <background color="-2362630"/>
+                      <font name="Britannic Bold" size="18"/>
+                      <model>
+                        <item value="changeInfo"/>
+                      </model>
+                      <preferredSize width="100" height="100"/>
+                      <toolTipText value="PersonInfo Change"/>
+                      <verifyInputWhenFocusTarget value="false"/>
+                    </properties>
+                  </component>
+                  <grid id="7b98" binding="personInfoCardLayoutPanel" layout-manager="CardLayout" hgap="0" vgap="0">
+                    <constraints border-constraint="Center"/>
+                    <properties/>
+                    <border type="none"/>
+                    <children/>
+                  </grid>
+                </children>
+              </grid>
+            </children>
+          </tabbedpane>
+        </children>
+      </grid>
+    </children>
+  </grid>
+  <buttonGroups>
+    <group name="buttonGroup1">
+      <member id="e49b7"/>
+      <member id="6f11b"/>
+      <member id="9bfbb"/>
+    </group>
+  </buttonGroups>
+</form>

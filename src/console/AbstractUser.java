@@ -1,3 +1,5 @@
+package console;
+
 import java.io.*;
 import java.sql.SQLException;
 import java.util.Enumeration;
@@ -110,12 +112,23 @@ public abstract class AbstractUser implements java.io.Serializable {
      * @throws
      */
     public void exitSystem() {
-        try {
-            FileWriter filewriter = new FileWriter("uploadfile//doc.txt", true);
-            BufferedWriter bufferedwriter = new BufferedWriter(filewriter);
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("D:\\@Java\\Object-oriented and multithreaded comprehensive experiment\\Manager System\\uploadfile\\doc.ser"))) {
             Enumeration<Doc> e = DataProcessing.listDoc();
             while (e.hasMoreElements()) {
                 Doc doc = e.nextElement();
+                oos.writeObject(doc);
+            }
+        } catch (IOException e) {
+            System.out.println("Cannot write to file: " + e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("Cannot list all doc: " + e.getMessage());
+        }
+        /*try {
+            FileWriter filewriter = new FileWriter("uploadfile//doc.txt", true);
+            BufferedWriter bufferedwriter = new BufferedWriter(filewriter);
+            Enumeration<console.Doc> e = console.DataProcessing.listDoc();
+            while (e.hasMoreElements()) {
+                console.Doc doc = e.nextElement();
                 String id = doc.getId();
                 String creator = doc.getCreator();
                 String timestamp = doc.getTimestamp().toString();
@@ -128,7 +141,7 @@ public abstract class AbstractUser implements java.io.Serializable {
             System.out.println("Cannot write to file");
         } catch (SQLException e) {
             System.out.println("Cannot list all doc " + e.getMessage());
-        }
+        }*/
         System.out.println("系统退出, 谢谢使用 ! ");
         System.exit(0);
     }

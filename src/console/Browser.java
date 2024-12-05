@@ -1,3 +1,5 @@
+package console;
+
 import java.sql.SQLException;
 import java.util.Scanner;
 

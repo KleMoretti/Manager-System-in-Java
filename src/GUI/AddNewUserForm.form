@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="GUI.AddNewUserForm">
+  <grid id="27dc6" binding="OuterPanel" layout-manager="GridBagLayout">
+    <constraints>
+      <xy x="20" y="20" width="500" height="400"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <grid id="94d7e" binding="InputPAnel" layout-manager="GridLayoutManager" row-count="3" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="10" left="5" bottom="10" right="5"/>
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+          <gridbag weightx="1.0" weighty="1.6"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="d634a" class="javax.swing.JLabel" binding="NameLabel">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <font name="Century Schoolbook" size="18"/>
+              <text value="Name: "/>
+            </properties>
+          </component>
+          <component id="3086" class="javax.swing.JLabel" binding="PasswordWordLabel">
+            <constraints>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <font name="Century Schoolbook" size="16"/>
+              <text value="Password: "/>
+            </properties>
+          </component>
+          <component id="1515c" class="javax.swing.JLabel" binding="PassWordLAbelInputAgainLabel">
+            <constraints>
+              <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <font name="Century Schoolbook" size="16"/>
+              <text value="Input Again: "/>
+            </properties>
+          </component>
+          <component id="24246" class="javax.swing.JTextField" binding="NameJTextField">
+            <constraints>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                <preferred-size width="150" height="-1"/>
+              </grid>
+            </constraints>
+            <properties>
+              <name value="NameInput"/>
+            </properties>
+          </component>
+          <component id="513ae" class="javax.swing.JTextField" binding="PasswordJTextField">
+            <constraints>
+              <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                <preferred-size width="150" height="-1"/>
+              </grid>
+            </constraints>
+            <properties>
+              <name value="PasswordInput"/>
+            </properties>
+          </component>
+          <component id="cce11" class="javax.swing.JTextField" binding="PasswordInputAgainJtextField">
+            <constraints>
+              <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                <preferred-size width="150" height="-1"/>
+              </grid>
+            </constraints>
+            <properties>
+              <name value="PasswordInputAgain"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <grid id="f6023" binding="SelectPanel" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="10" bottom="5" right="10"/>
+        <constraints>
+          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+          <gridbag weightx="1.0" weighty="0.8"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="64180" class="javax.swing.JButton" binding="OKButton">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <actionCommand value="OK"/>
+              <name value="OK"/>
+              <text value="OK"/>
+            </properties>
+          </component>
+          <component id="c66f6" class="javax.swing.JButton" binding="ExitButton">
+            <constraints>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <name value="Exit"/>
+              <text value="Exit"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <grid id="13360" binding="ButtonPanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="5" left="20" bottom="10" right="15"/>
+        <constraints>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+          <gridbag weightx="1.0" weighty="0.45"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="da203" class="javax.swing.JComboBox" binding="RolecomBox">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <model>
+                <item value="Administrator"/>
+                <item value="Browser"/>
+                <item value="Operator"/>
+              </model>
+            </properties>
+          </component>
+        </children>
+      </grid>
+    </children>
+  </grid>
+</form>
