@@ -1,17 +1,28 @@
-package GUI;
+package gui;
 
 import console.AbstractUser;
 import console.DataProcessing;
+
+import java.io.IOException;
 import java.sql.SQLException;
 
+/**
+ * @author 贾智超
+ */
 public class Main {
     LoginFrame login;
     FileBrowsingFrame fileBrowsingFrame;
     DataProcessing dataProcessing;
-    FileManagerFrame fileManagerFrame;  // 用于文件管理的界面
+    /**用于文件管理的界面*/
+    FileManagerFrame fileManagerFrame;
     AbstractUser user;
 
     public static void main(String[] args) throws SQLException {
+        try {
+            DataProcessing.init();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         new Main().startFrame();
     }
 
@@ -27,7 +38,7 @@ public class Main {
 
     }
 
-    // Method to handle successful login and transition to file browsing frame
+     /**Method to handle successful login and transition to file browsing frame*/
     public void loginSuccess(String name, String password) {
         try {
             user = DataProcessing.searchUser(name, password);
@@ -58,7 +69,7 @@ public class Main {
         return login;
     }
 
-    // 在登录成功后，你可以将用户信息传递给 fileManagerFrame
+    /**在登录成功后，你可以将用户信息传递给 fileManagerFrame*/
     public void setUser(AbstractUser user) {
         this.user = user;
         fileManagerFrame.setUser(this.user);  // 传递给 FileManagerFrame

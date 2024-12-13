@@ -1,6 +1,7 @@
 package console;
 
 import java.io.*;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Enumeration;
 
@@ -84,13 +85,14 @@ public abstract class AbstractUser implements java.io.Serializable {
      * @throws SQLException
      */
     public void showFileList() throws SQLException {
-        Enumeration<Doc> e = DataProcessing.listDoc();
-        Doc doc;
-        while (e.hasMoreElements()) {
-            doc = e.nextElement();
-            System.out.println("Id:" + doc.getId() + "\t Creator:" + doc.getCreator() +
-                    "\t Time:" + doc.getTimestamp() + "\t Filename:" + doc.getFilename());
-            System.out.println("Description:" + doc.getDescription());
+        ResultSet rs = DataProcessing.listDoc();
+        while (rs.next()) {
+            System.out.println("档案编号: " + rs.getString("Id"));
+            System.out.println("创建者: " + rs.getString("creator"));
+            System.out.println("创建时间: " + rs.getString("timestamp"));
+            System.out.println("描述: " + rs.getString("description"));
+            System.out.println("文件名: " + rs.getString("filename"));
+            System.out.println();
         }
 
     }
@@ -113,9 +115,9 @@ public abstract class AbstractUser implements java.io.Serializable {
      */
     public void exitSystem() {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("D:\\@Java\\Object-oriented and multithreaded comprehensive experiment\\Manager System\\uploadfile\\doc.ser"))) {
-            Enumeration<Doc> e = DataProcessing.listDoc();
-            while (e.hasMoreElements()) {
-                Doc doc = e.nextElement();
+            ResultSet rs = DataProcessing.listDoc();
+            while (rs.next()) {
+                Doc doc =new Doc(rs.getString("Id"), rs.getString("creator"), rs.getTimestamp("timestamp"), rs.getString("description"), rs.getString("filename"));
                 oos.writeObject(doc);
             }
         } catch (IOException e) {
@@ -123,25 +125,7 @@ public abstract class AbstractUser implements java.io.Serializable {
         } catch (SQLException e) {
             System.out.println("Cannot list all doc: " + e.getMessage());
         }
-        /*try {
-            FileWriter filewriter = new FileWriter("uploadfile//doc.txt", true);
-            BufferedWriter bufferedwriter = new BufferedWriter(filewriter);
-            Enumeration<console.Doc> e = console.DataProcessing.listDoc();
-            while (e.hasMoreElements()) {
-                console.Doc doc = e.nextElement();
-                String id = doc.getId();
-                String creator = doc.getCreator();
-                String timestamp = doc.getTimestamp().toString();
-                String description = doc.getDescription();
-                String filename = doc.getFilename();
-                bufferedwriter.write(id+" " + creator +" "+ timestamp +" "+ description+" " + filename+"\n");
-            }
-            bufferedwriter.close();
-        } catch (IOException e) {
-            System.out.println("Cannot write to file");
-        } catch (SQLException e) {
-            System.out.println("Cannot list all doc " + e.getMessage());
-        }*/
+
         System.out.println("系统退出, 谢谢使用 ! ");
         System.exit(0);
     }

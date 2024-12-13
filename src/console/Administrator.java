@@ -1,6 +1,7 @@
 package console;
 
 import java.io.*;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -161,10 +162,9 @@ public class Administrator extends AbstractUser {
     }
 
     public void listUser() throws SQLException {
-        Enumeration<AbstractUser> e = DataProcessing.listUser();
-        while (e.hasMoreElements()) {
-            AbstractUser element = e.nextElement();
-            System.out.println(element.getRole() + "\t\t\t" + element.getName());
+        ResultSet rs=DataProcessing.listUser();
+        while(rs.next()){
+            System.out.println("Name: "+rs.getString("username")+" Password: "+rs.getString("password")+" Role: "+rs.getString("role"));
         }
     }
 

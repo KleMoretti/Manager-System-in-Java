@@ -1,13 +1,10 @@
-package GUI;
-
-import console.Doc;
+package gui;
 
 import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
 import javax.swing.text.StyleContext;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.*;
 import java.sql.SQLException;
 import java.util.Locale;
 
@@ -59,7 +56,7 @@ public class LoginFrame {
                 try {
                     if (mainFrame.searchUser(userName, userPassword)) {
                         // 登录成功，可以显示文件浏览界面
-                       loginSuccessfullDialog();
+                        loginSuccessfullDialog();
                        /* try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(
                                 "D:\\@Java\\Object-oriented and multithreaded comprehensive experiment\\Manager System\\uploadfile\\doc.ser"))) {
                             while (true) {
@@ -168,7 +165,6 @@ public class LoginFrame {
         frame.pack();
         frame.setVisible(true);
     }
-
 
 
     public void dispose() {

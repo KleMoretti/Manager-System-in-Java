@@ -1,4 +1,4 @@
-package GUI;
+package gui;
 
 import javax.swing.*;
 import java.awt.*;
@@ -58,4 +58,5 @@ public class DownAndUpLoadSuccess {
     public JComponent $$$getRootComponent$$$() {
         return DownAndUpLoadSuccessJPanel;
     }
+
 }

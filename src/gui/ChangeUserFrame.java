@@ -1,6 +1,5 @@
-package GUI;
+package gui;
 
-import console.AbstractUser;
 import console.DataProcessing;
 
 import javax.swing.*;
@@ -9,8 +8,8 @@ import javax.swing.text.StyleContext;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Enumeration;
 import java.util.Locale;
 
 public class ChangeUserFrame {
@@ -73,10 +72,9 @@ public class ChangeUserFrame {
     }
 
     public void show() throws SQLException {
-        Enumeration users = DataProcessing.listUser();
-        while (users.hasMoreElements()) {
-            AbstractUser user = (AbstractUser) users.nextElement();
-            NamecomboBox.addItem(user.getName());
+        ResultSet rs = DataProcessing.listUser();
+        while (rs.next()) {
+            NamecomboBox.addItem(rs.getString("username"));
         }
     }
 

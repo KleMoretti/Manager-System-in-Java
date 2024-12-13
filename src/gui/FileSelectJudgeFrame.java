@@ -1,4 +1,4 @@
-package GUI;
+package gui;
 
 import console.DataProcessing;
 
@@ -37,14 +37,14 @@ public class FileSelectJudgeFrame {
     public FileSelectJudgeFrame(FileManagerFrame fileManagerFrame) {
         this.fileManagerFrame = fileManagerFrame;
         FileSelectedJudgeOKButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        NumberLabelFieldText = numberLabelFieldTextField.getText();
-                        DescriptionLabelFieldText = DescriptionLabelField.getText();
-                        fileManagerFrame.NumberInFileManagerFrame = NumberLabelFieldText;
-                        fileManagerFrame.DescriptionInFileManagerFrame = DescriptionLabelFieldText;
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                NumberLabelFieldText = numberLabelFieldTextField.getText();
+                DescriptionLabelFieldText = DescriptionLabelField.getText();
+                fileManagerFrame.NumberInFileManagerFrame = NumberLabelFieldText;
+                fileManagerFrame.DescriptionInFileManagerFrame = DescriptionLabelFieldText;
 
-                        try {
+                try {
                     if (DataProcessing.searchDoc(NumberLabelFieldText) == null) {
                         if (NumberLabelFieldText != null || DescriptionLabelFieldText != null) {
                             int result = fileManagerFrame.getFileChooser().showOpenDialog(null);
@@ -147,4 +147,5 @@ public class FileSelectJudgeFrame {
     public JComponent $$$getRootComponent$$$() {
         return BackgroundPanel;
     }
+
 }
