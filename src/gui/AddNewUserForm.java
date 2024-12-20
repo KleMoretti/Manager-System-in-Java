@@ -1,12 +1,10 @@
 package gui;
 
-import console.DataProcessing;
-
+import console.DocClient;
 import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
 import javax.swing.text.StyleContext;
 import java.awt.*;
-import java.sql.SQLException;
 import java.util.Locale;
 
 
@@ -51,11 +49,20 @@ public class AddNewUserForm {
             if (!passwordJTextField.getText().equals(passwordInputAgainJtextField.getText())) {
                 JOptionPane.showMessageDialog(null, "The password is not the same!", "Error", JOptionPane.ERROR_MESSAGE);
             }
-            JOptionPane.showMessageDialog(null, "Add new user success!", "Success", JOptionPane.INFORMATION_MESSAGE);
-            try {
-                DataProcessing.insertUser(nameJTextField.getText(), passwordJTextField.getText(), rolecomBox.getSelectedItem().toString());
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
+            //DocClient.setMessage("ADD_USER" + " " + nameJTextField.getText() + " " + passwordJTextField.getText() + " " + rolecomBox.getSelectedItem().toString());
+            //如果add成功，在服务器端增加，返回true，这里的Dataprocessing应该被舍弃
+            try  {
+               fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> ADD_USER" + " " + nameJTextField.getText() + " " + passwordJTextField.getText() + " " + rolecomBox.getSelectedItem().toString());
+                String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
+                if ("ADD_SUCCESS".equals(response)) {
+                    System.out.println("Add success!");
+                    JOptionPane.showMessageDialog(null, "Add success!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    System.out.println("Add failed!");
+                    JOptionPane.showMessageDialog(null, "Add failed!", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
             nameJTextField.setText("");
             passwordJTextField.setText("");
@@ -93,19 +100,19 @@ public class AddNewUserForm {
         gbc.fill = GridBagConstraints.BOTH;
         outerPanel.add(inputpanel, gbc);
         nameLabel = new JLabel();
-        Font NameLabelFont = this.$$$getFont$$$("Century Schoolbook", -1, 18, nameLabel.getFont());
-        if (NameLabelFont != null) nameLabel.setFont(NameLabelFont);
+        Font nameLabelFont = this.$$$getFont$$$("Century Schoolbook", -1, 18, nameLabel.getFont());
+        if (nameLabelFont != null) nameLabel.setFont(nameLabelFont);
         nameLabel.setText("Name: ");
         inputpanel.add(nameLabel, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         passwordWordLabel = new JLabel();
-        Font PasswordWordLabelFont = this.$$$getFont$$$("Century Schoolbook", -1, 16, passwordWordLabel.getFont());
-        if (PasswordWordLabelFont != null) passwordWordLabel.setFont(PasswordWordLabelFont);
+        Font passwordWordLabelFont = this.$$$getFont$$$("Century Schoolbook", -1, 16, passwordWordLabel.getFont());
+        if (passwordWordLabelFont != null) passwordWordLabel.setFont(passwordWordLabelFont);
         passwordWordLabel.setText("Password: ");
         inputpanel.add(passwordWordLabel, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         passWordLAbelInputAgainLabel = new JLabel();
-        Font PassWordLAbelInputAgainLabelFont = this.$$$getFont$$$("Century Schoolbook", -1, 16, passWordLAbelInputAgainLabel.getFont());
-        if (PassWordLAbelInputAgainLabelFont != null)
-            passWordLAbelInputAgainLabel.setFont(PassWordLAbelInputAgainLabelFont);
+        Font passWordLAbelInputAgainLabelFont = this.$$$getFont$$$("Century Schoolbook", -1, 16, passWordLAbelInputAgainLabel.getFont());
+        if (passWordLAbelInputAgainLabelFont != null)
+            passWordLAbelInputAgainLabel.setFont(passWordLAbelInputAgainLabelFont);
         passWordLAbelInputAgainLabel.setText("Input Again: ");
         inputpanel.add(passWordLAbelInputAgainLabel, new com.intellij.uiDesigner.core.GridConstraints(2, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         nameJTextField = new JTextField();

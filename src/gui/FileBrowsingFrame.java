@@ -1,6 +1,7 @@
 package gui;
 
 import console.AbstractUser;
+import console.DocClient;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -12,6 +13,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.*;
+import java.util.List;
 
 public class FileBrowsingFrame {
     Main mainFrame;
@@ -62,10 +64,15 @@ public class FileBrowsingFrame {
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent ex) {
+                try  {
+                    mainFrame.client.sendMessage("CLIENT>>> EXIT");
+                    String response = mainFrame.client.receiveMessage().join().toString();
+                    System.out.println("Response from server: " + response);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 System.exit(0); // 确保窗口关闭
             }
-
-
         });
 
         setupContentPanels();
@@ -87,21 +94,25 @@ public class FileBrowsingFrame {
         frame.setLocation((int) ((screenSize.getWidth() - frame.getWidth()) / 2), (int) ((screenSize.getHeight() - frame.getHeight()) / 2));
         frame.setVisible(true);
 
-        switch (currentUser.getRole()) {
+        applyRoleRestrictions(currentUser.getRole());
+    }
+
+    private void applyRoleRestrictions(String role) {
+        switch (role) {
             case "administrator":
+                // Full access; no restrictions
                 break;
             case "browser":
-                userCardManager.setListUnabled(UserManagerJList, new HashSet<>(Arrays.asList(0, 1, 2)));
-                fileCardManager.setListUnabled(FileManagerJList, new HashSet<>(Arrays.asList(0)));
+                userCardManager.setListUnabled(UserManagerJList, Set.of(0, 1, 2));
+                fileCardManager.setListUnabled(FileManagerJList, Set.of(0));
                 break;
             case "operator":
-                userCardManager.setListUnabled(UserManagerJList, new HashSet<>(Arrays.asList(0, 1, 2)));
+                userCardManager.setListUnabled(UserManagerJList, Set.of(0, 1, 2));
                 break;
             default:
+                // Handle other roles or default restrictions
                 break;
         }
-
-
     }
 
     public static void main(String[] args) {
@@ -113,38 +124,46 @@ public class FileBrowsingFrame {
     }
 
     private void setupContentPanels() {
-        // 初始化 CardManager 实例
-        userCardManager = new CardManager(UserManagerCardLayoutPanel, userCardLayout);
-        fileCardManager = new CardManager(FileManagerCardLayoutPanel, fileCardLayout);
-        personCardManager = new CardManager(personInfoCardLayoutPanel, personCardLayout);
+        if (userCardManager == null) {
+            userCardManager = new CardManager(UserManagerCardLayoutPanel, userCardLayout);
+        }
+        if (fileCardManager == null) {
+            fileCardManager = new CardManager(FileManagerCardLayoutPanel, fileCardLayout);
+        }
+        if (personCardManager == null) {
+            personCardManager = new CardManager(personInfoCardLayoutPanel, personCardLayout);
+        }
 
-        // 使用 CardManager 添加卡片内容
-        userCardManager.addContentPanel("changeDefault", "Details for change");
-        userCardManager.addContentPanel("change", new ChangeUserFrame(this).getChangeUserPanel());
+        Map<CardManager, List<String>> cardConfigurations = Map.of(
+                userCardManager, List.of("changeDefault", "change", "deleteDefault", "delete", "addDefault", "add"),
+                fileCardManager, List.of("uploadDefault", "upload", "downloadDefault", "download"),
+                personCardManager, List.of("changeInfoDefault", "changeInfo")
+        );
 
-        userCardManager.addContentPanel("deleteDefault", "Details for delete");
-        userCardManager.addContentPanel("delete", new DeleteUserFrame(this).getChangeUserPanel());
-
-        userCardManager.addContentPanel("addDefault", "Details for add");
-        userCardManager.addContentPanel("add", new AddNewUserForm(this).getChangeUserPanel());
-
-        fileCardManager.addContentPanel("uploadDefault", "Details for upload");
-        fileCardManager.addContentPanel("upload", new FileManagerFrame(this).getFileManagerPanel());
-        fileCardManager.addContentPanel("downloadDefault", "Details for download");
-        fileCardManager.addContentPanel("download", new DownFileFrame(this).getFileManagerPanel());
-
-        personCardManager.addContentPanel("changeInfoDefault", "Details of personInfo");
-        personCardManager.addContentPanel("changeInfo", new PersonInfoChange(this).getOuterPanel());
-
-        // 默认显示第一个面板
-        userCardManager.showCard("changeDefault");
-        fileCardManager.showCard("uploadDefault");
-        personCardManager.showCard("changeInfoDefault");
+        cardConfigurations.forEach((cardManager, cards) -> {
+            for (String card : cards) {
+                // Example: Add content dynamically; replace `getPanel()` with the actual method for each card
+                cardManager.addContentPanel(card, getPanelForCard(card));
+            }
+            cardManager.showCard(cards.get(0)); // Show the default card
+        });
 
         // 为每个 JList 添加 ListSelectionListener
         addListSelectionListener(UserManagerJList, UserManagerCardLayoutPanel, userCardLayout);
         addListSelectionListener(FileManagerJList, FileManagerCardLayoutPanel, fileCardLayout);
         addListSelectionListener(PersonInfoJList, personInfoCardLayoutPanel, personCardLayout);
+    }
+
+    private JPanel getPanelForCard(String card) {
+        return switch (card) {
+            case "change" -> new ChangeUserFrame(this).getChangeUserPanel();
+            case "delete" -> new DeleteUserFrame(this).getChangeUserPanel();
+            case "add" -> new AddNewUserForm(this).getChangeUserPanel();
+            case "upload" -> new FileManagerFrame(this).getFileManagerPanel();
+            case "download" -> new DownFileFrame(this).getFileManagerPanel();
+            case "changeInfo" -> new PersonInfoChange(this).getOuterPanel();
+            default -> new JPanel(new BorderLayout()); // Default empty panel
+        };
     }
 
     // Method to set the user after login
@@ -177,7 +196,7 @@ public class FileBrowsingFrame {
 
 
     /**
-     * Method generated by IntelliJ IDEA gui Designer
+     * Method generated by IntelliJ IDEA GUI Designer
      * >>> IMPORTANT!! <<<
      * DO NOT edit this method OR call it in your code!
      *
@@ -301,4 +320,9 @@ public class FileBrowsingFrame {
         return FileBrowsingFrame;
     }
 
+    public void setVisible(boolean b) {
+        if (b) {
+            show();
+        }
+    }
 }

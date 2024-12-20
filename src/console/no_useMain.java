@@ -10,7 +10,7 @@ import java.util.Scanner;
  * @date 2024/11/15
  */
 @SuppressWarnings("InfiniteLoopStatement")
-public class Main {
+public class no_useMain {
     public static void main(String[] args) throws SQLException, IOException {
         AbstractUser user;
         Scanner scanner = new Scanner(System.in);

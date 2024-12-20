@@ -2,6 +2,8 @@ package gui;
 
 import console.DataProcessing;
 import console.Doc;
+import console.DocClient;
+import console.ResultSetData;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -12,6 +14,8 @@ import java.awt.event.ActionListener;
 import java.io.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class DownFileFrame {
     FileBrowsingFrame fileBrowsingFrame;
@@ -38,25 +42,34 @@ public class DownFileFrame {
             @Override
             public void actionPerformed(ActionEvent ee) {
                 JOptionPane.showMessageDialog(null, "Refresh success!", "Success", JOptionPane.INFORMATION_MESSAGE);
+
                 // 清空现有的数据
                 DefaultTableModel model = (DefaultTableModel) Table.getModel();
                 model.setRowCount(0);  // 清空所有行
+                try  {
+                    fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> LIST_DOC");
 
-                try {
-                    ResultSet rs = DataProcessing.listDoc();
-                    while (rs.next()) {
-                        Object[] data = new Object[5];
-                        data[0] = rs.getString("Id");
-                        data[1] = rs.getString("Creator");
-                        data[2] = rs.getTimestamp("Timestamp");
-                        data[3] = rs.getString("Filename");
-                        data[4] = rs.getString("Description");
-                        ((DefaultTableModel) Table.getModel()).addRow(data);
+                    String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
+                    if (!"LIST_DOC_SUCCESS".equals(response)) {
+                        System.err.println("Failed to list documents");
+                        return;
+                    } else {
+                        Object responses = fileBrowsingFrame.mainFrame.client.receiveMessage().join();
+                        if (responses instanceof ResultSetData) {
+                            ResultSetData resultSetData = (ResultSetData) responses;
+                            String[] columnNames = resultSetData.getColumnNames();
+                            List<String[]> data = resultSetData.getData();
+                            model.setColumnIdentifiers(columnNames);
+                            for (String[] row : data) {
+                                model.addRow(row);
+                            }
+                        }
+                        System.out.println("Refresh success!");
                     }
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
 
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
                 // 自动调整列宽
                 packColumns(Table);
 
@@ -78,11 +91,17 @@ public class DownFileFrame {
                     for (int i = 0; i < 5; i++) {
                         rowData[i] = Table.getValueAt(selectedRow, i);
                     }
-                    try {
-                        updateDocFileData(rowData);
-                    } catch (IOException | SQLException ex) {
-                        throw new RuntimeException(ex);
+                    try  {
+                        fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> DOWNLOAD_FILE " + rowData[0]);
+                        String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
+                        if ("DOWNLOAD_FILE_SUCCESS".equals(response)) {
+                            showSuccessDialog();
+                            System.out.println("Download success!");
+                        }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
                     }
+
                 } else {
                     JOptionPane.showMessageDialog(null, "No row selected!", "Warning", JOptionPane.WARNING_MESSAGE);
                 }
@@ -92,7 +111,7 @@ public class DownFileFrame {
         show();
     }
 
-    private void updateDocFileData(Object[] rowData) throws IOException, SQLException {
+    /*private void updateDocFileData(Object[] rowData) throws IOException, SQLException {
         byte[] buffer = new byte[1024];
 
         String uploadpath = "D:\\@Java\\Object-oriented and multithreaded comprehensive experiment\\Manager System\\uploadfile\\";
@@ -118,7 +137,7 @@ public class DownFileFrame {
 
         // 创建下载成功对话框
         showSuccessDialog();
-    }
+    }*/
 
     public void show() {
         // 设置选择模式为单选，并且只能选择整行（如果还没有设置）
@@ -144,8 +163,8 @@ public class DownFileFrame {
             model.setColumnIdentifiers(columnNames);
         }
 
-
         try {
+            DataProcessing.init();
             ResultSet rs = DataProcessing.listDoc();
             while (rs.next()) {
                 Object[] data = new Object[5];
@@ -162,9 +181,11 @@ public class DownFileFrame {
 
         // 自动调整列宽
         packColumns(Table);
-
         // 居中文本
         centerAlignCells(Table);
+
+        Table.revalidate();
+        Table.repaint();
 
     }
 
@@ -210,7 +231,7 @@ public class DownFileFrame {
     }
 
     /**
-     * Method generated by IntelliJ IDEA gui Designer
+     * Method generated by IntelliJ IDEA GUI Designer
      * >>> IMPORTANT!! <<<
      * DO NOT edit this method OR call it in your code!
      *

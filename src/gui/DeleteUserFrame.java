@@ -1,11 +1,17 @@
 package gui;
 
 import console.DataProcessing;
+import console.DocClient;
+import console.ResultSetData;
+
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 
 /**
@@ -16,7 +22,7 @@ public class DeleteUserFrame {
     FileBrowsingFrame fileBrowsingFrame;
 
     private JTable userShowTable;
-    private JButton okbutton;
+    private JButton okButton;
     private JButton refreshButton;
     private JPanel outerPanel;
     private JPanel showUserPanel;
@@ -24,113 +30,115 @@ public class DeleteUserFrame {
 
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("DeleteUserFrame");
-        frame.setContentPane(new DeleteUserFrame(new FileBrowsingFrame(new Main())).outerPanel);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.pack();
-        frame.setVisible(true);
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("DeleteUserFrame");
+            frame.setContentPane(new DeleteUserFrame(new FileBrowsingFrame(null)).outerPanel);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.pack();
+            frame.setVisible(true);
+        });
     }
 
     public DeleteUserFrame(FileBrowsingFrame fileBrowsingFrame) {
         this.fileBrowsingFrame = fileBrowsingFrame;
-
         $$$setupUI$$$();
-
-        okbutton.addActionListener(e -> {
-            int selectedRow = userShowTable.getSelectedRow();
-            if (selectedRow != -1) {
-                Object[] rowData = new Object[3];
-                rowData[0] = userShowTable.getValueAt(selectedRow, 0);
-                try {
-                    DataProcessing.deleteUser(String.valueOf(rowData[0]));
-                    DefaultTableModel model = (DefaultTableModel) userShowTable.getModel();
-                    model.removeRow(selectedRow);
-                } catch (SQLException ex) {
-                    throw new RuntimeException(ex);
-                }
-            } else {
-                JOptionPane.showMessageDialog(null, "No row selected!", "Warning", JOptionPane.WARNING_MESSAGE);
-            }
-        });
-
-
-        refreshButton.addActionListener(e -> {
-            JOptionPane.showMessageDialog(null, "Exit success!", "Success", JOptionPane.INFORMATION_MESSAGE);
-            // 清空现有的数据
-            DefaultTableModel model = (DefaultTableModel) userShowTable.getModel();
-            model.setRowCount(0);  // 清空所有行
-
-            try {
-                ResultSet rs = DataProcessing.listUser();
-                while (rs.next()) {
-                    Object[] data = new Object[3];
-                    data[0] = rs.getString("username");
-                    data[1] = rs.getString("password");
-                    data[2] = rs.getString("role");
-                    ((DefaultTableModel) userShowTable.getModel()).addRow(data);
-                }
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
-            }
-
-            // 自动调整列宽
-            packColumns(userShowTable);
-
-            // 居中文本
-            centerAlignCells(userShowTable);
-
-            userShowTable.revalidate();
-            userShowTable.repaint();
-
-        });
-
-        show();
+        initializeListeners();
+        showUsers();
     }
 
-    public void show() {
-        // 设置选择模式为单选，并且只能选择整行（如果还没有设置）
-        if (userShowTable.getSelectionModel().getSelectionMode() != ListSelectionModel.SINGLE_SELECTION) {
-            userShowTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-            userShowTable.setRowSelectionAllowed(true);
-            userShowTable.setColumnSelectionAllowed(false);
-        }
+    private void initializeListeners() {
+        okButton.addActionListener(e -> attemptDeleteUser());
+        refreshButton.addActionListener(e -> refreshUserList());
+    }
 
-        String[] columnNames = new String[]{"name", "password", "role"};
+    private void attemptDeleteUser() {
+        int selectedRow = userShowTable.getSelectedRow();
+        if (selectedRow != -1) {
+            String username = userShowTable.getValueAt(selectedRow, 0).toString();
+            String password = userShowTable.getValueAt(selectedRow, 1).toString();
+            String role = userShowTable.getValueAt(selectedRow, 2).toString();
 
-        DefaultTableModel model;
-        if (!(userShowTable.getModel() instanceof DefaultTableModel)) {
-            model = new DefaultTableModel(columnNames, 0) {
-                @Override
-                public boolean isCellEditable(int row, int column) {
-                    return false;
+            try {
+                fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> DELETE_USER" + " " + username + " " + password + " " + role);
+                String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
+                if (!"DELETE_SUCCESS".equals(response)) {
+                    System.err.println("Failed to delete user");
+                    JOptionPane.showMessageDialog(null, "Failed to delete user.", "Error", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(null, "Delete user success!", "Success", JOptionPane.INFORMATION_MESSAGE);
                 }
-            };
-            userShowTable.setModel(model);
-        } else {
-            model = (DefaultTableModel) userShowTable.getModel();
-            model.setColumnIdentifiers(columnNames);
-        }
-
-
-        try {
-            ResultSet rs = DataProcessing.listUser();
-            while (rs.next()) {
-                Object[] data = new Object[3];
-                data[0] = rs.getString("username");
-                data[1] = rs.getString("password");
-                data[2] = rs.getString("role");
-                ((DefaultTableModel) userShowTable.getModel()).addRow(data);
+            } catch (IOException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Failed to delete user.", "Error", JOptionPane.ERROR_MESSAGE);
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } else {
+            JOptionPane.showMessageDialog(null, "No row selected!", "Warning", JOptionPane.WARNING_MESSAGE);
         }
+        refreshUserList();
+    }
 
-        // 自动调整列宽
+
+    private void refreshUserList() {
+        DefaultTableModel model = (DefaultTableModel) userShowTable.getModel();
+        model.setRowCount(0);  // 清空所有行
+        try {
+            fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> LIST_USER");
+
+            String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
+            if (!"LIST_USER_SUCCESS".equals(response)) {
+                System.err.println("Failed to list documents");
+                JOptionPane.showMessageDialog(null, "Failed to refresh user list.", "Error", JOptionPane.ERROR_MESSAGE);
+            } else {
+                Object responses = fileBrowsingFrame.mainFrame.client.receiveMessage().join();
+                if (responses instanceof ResultSetData) {
+                    ResultSetData resultSetData = (ResultSetData) responses;
+                    String[] columnNames = resultSetData.getColumnNames();
+                    List<String[]> data = resultSetData.getData();
+                    model.setColumnIdentifiers(columnNames);
+                    for (String[] row : data) {
+                        model.addRow(row);
+                    }
+                    JOptionPane.showMessageDialog(null, "Refresh success!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    System.out.println("Refresh success!");
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Failed to refresh user list.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
         packColumns(userShowTable);
-
-        // 居中文本
         centerAlignCells(userShowTable);
+        userShowTable.revalidate();
+        userShowTable.repaint();
+    }
 
+
+    private CompletableFuture<Void> loadUsersFromDatabase() {
+        return CompletableFuture.runAsync(() -> {
+            refreshUserList();
+        });
+    }
+
+    private void showUsers() {
+        String[] columnNames = {"Name", "Password", "Role"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        userShowTable.setModel(model);
+        userShowTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        userShowTable.setRowSelectionAllowed(true);
+        userShowTable.setColumnSelectionAllowed(false);
+
+        loadUsersFromDatabase()
+                .thenRun(() -> packColumns(userShowTable))
+                .thenRun(() -> centerAlignCells(userShowTable))
+                .thenRun(() -> SwingUtilities.invokeLater(() -> {
+                    userShowTable.revalidate();
+                    userShowTable.repaint();
+                }));
     }
 
     private void packColumns(JTable table) {
@@ -205,9 +213,9 @@ public class DeleteUserFrame {
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         outerPanel.add(buttonPanel, gbc);
-        okbutton = new JButton();
-        okbutton.setText("OK");
-        buttonPanel.add(okbutton, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        okButton = new JButton();
+        okButton.setText("OK");
+        buttonPanel.add(okButton, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         refreshButton = new JButton();
         refreshButton.setText("Refresh");
         buttonPanel.add(refreshButton, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));

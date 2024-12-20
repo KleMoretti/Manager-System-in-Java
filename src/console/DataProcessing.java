@@ -1,8 +1,7 @@
 package console;
 
 import java.io.*;
-import java.util.Enumeration;
-import java.util.Hashtable;
+
 import java.sql.*;
 
 /**
@@ -11,21 +10,8 @@ import java.sql.*;
  * @author gongjing
  * @date 2016/10/13
  */
-public class DataProcessing {
+public class DataProcessing implements Serializable {
     private static boolean connectToDB = false;
-
-    static Hashtable<String, AbstractUser> users;
-    static Hashtable<String, Doc> docs;
-
-    String drivername="com.mysql.jdbc.Driver";
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/document_schema";
-    private static final String USER = "root";
-    private static final String PASS = "123456";
-    private static Connection connection;
-    private static String sql=null;
-    private static ResultSet rs=null;
-    private static Statement stmt=null;
-    private static PreparedStatement prestmt=null;
 
     /**
      * TODO 初始化，连接数据库
@@ -34,14 +20,13 @@ public class DataProcessing {
      * @return void
      * @throws
      */
-    public static void init() throws IOException {
-        connectToDB = true;
-        try{
-            connection=DriverManager.getConnection(DB_URL,USER,PASS);
-        } catch (SQLException e) {
+    public static void init() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver"); // 使用最新的MySQL驱动类
+            connectToDB = true;
+        } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     /**
@@ -55,17 +40,18 @@ public class DataProcessing {
         if (!connectToDB) {
             throw new SQLException("Not Connected to Database");
         }
-        sql="select * from doc_info where Id='"+id+"'";
-        stmt=connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_READ_ONLY);
-        rs=stmt.executeQuery(sql);
-        if(rs.next()){
-            String creator=rs.getString("creator");
-            Timestamp timestamp=rs.getTimestamp("timestamp");
-            String description=rs.getString("description");
-            String filename=rs.getString("filename");
-            Doc doc=new Doc(id,creator,timestamp,description,filename);
-            return doc;
+        String sql = "SELECT * FROM doc_info WHERE Id = ?";
+        try (Connection conn = DatabasePool.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, id);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String creator = rs.getString("creator");
+                Timestamp timestamp = rs.getTimestamp("timestamp");
+                String description = rs.getString("description");
+                String filename = rs.getString("filename");
+                return new Doc(id, creator, timestamp, description, filename);
+            }
         }
         return null;
     }
@@ -77,15 +63,15 @@ public class DataProcessing {
      * @return Enumeration<console.Doc>
      * @throws SQLException
      */
-    public static  ResultSet listDoc() throws SQLException {
+    public static ResultSet listDoc() throws SQLException {
         if (!connectToDB) {
             throw new SQLException("Not Connected to Database");
         }
-        sql="select * from doc_info";
-        stmt=connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_READ_ONLY);
-        rs=stmt.executeQuery(sql);
-        return rs;
+        String sql = "SELECT * FROM doc_info";
+        Connection conn = DatabasePool.getConnection();
+        Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+        return stmt.executeQuery(sql);
+
     }
 
     /**
@@ -100,29 +86,24 @@ public class DataProcessing {
      * @throws SQLException
      */
     public static boolean insertDoc(String id, String creator, Timestamp timestamp, String description, String filename) throws SQLException {
-        if (connection == null || connection.isClosed()) { // 更好的连接检查
+        if (!connectToDB) {
             throw new SQLException("Not Connected to Database");
         }
-
-        // 使用try-with-resources自动关闭资源
-        try (PreparedStatement checkStmt = connection.prepareStatement("SELECT 1 FROM doc_info WHERE Id = ?")) {
-            checkStmt.setString(1, id);
-            try (ResultSet rs = checkStmt.executeQuery()) {
-                if (rs.next()) {
-                    return false; // 文档已存在
-                }
-            }
-        }
-
-        // 准备并执行插入语句
+        String checkSql = "SELECT 1 FROM doc_info WHERE Id = ?";
         String insertSql = "INSERT INTO doc_info (Id, creator, timestamp, description, filename) VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
+        try (Connection conn = DatabasePool.getConnection();
+             PreparedStatement checkStmt = conn.prepareStatement(checkSql);
+             PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+            checkStmt.setString(1, id);
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next()) {
+                return false; // 文档已存在
+            }
             insertStmt.setString(1, id);
             insertStmt.setString(2, creator);
             insertStmt.setTimestamp(3, timestamp);
             insertStmt.setString(4, description);
             insertStmt.setString(5, filename);
-
             int rowsAffected = insertStmt.executeUpdate();
             return rowsAffected > 0;
         }
@@ -139,28 +120,24 @@ public class DataProcessing {
         if (!connectToDB) {
             throw new SQLException("Not Connected to Database");
         }
-        stmt=connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_READ_ONLY);
-        sql="select * from user_info where username='"+name+"'";
-
-        rs=stmt.executeQuery(sql);
-        if(rs.next()){
-            String password=rs.getString("password");
-            String role=rs.getString("role");
-            AbstractUser user;
-            switch (role) {
-                case "administrator":
-                    user = new Administrator(name, password, role);
-                    break;
-                case "operator":
-                    user = new Operator(name, password, role);
-                    break;
-                default:
-                    user = new Browser(name, password, role);
+        String sql = "SELECT * FROM user_info WHERE username = ?";
+        try (Connection conn = DatabasePool.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, name);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String password = rs.getString("password");
+                String role = rs.getString("role");
+                switch (role) {
+                    case "administrator":
+                        return new Administrator(name, password, role);
+                    case "operator":
+                        return new Operator(name, password, role);
+                    default:
+                        return new Browser(name, password, role);
+                }
             }
-            return user;
         }
-
         return null;
     }
 
@@ -176,24 +153,23 @@ public class DataProcessing {
         if (!connectToDB) {
             throw new SQLException("Not Connected to Database");
         }
-        stmt=connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_READ_ONLY);
-        sql="select * from user_info where username='"+name+ "'"+"and password='"+password+"'";
-        rs=stmt.executeQuery(sql);
-        if(rs.next()){
-            String role=rs.getString("role");
-            AbstractUser user;
-            switch (role) {
-                case "administrator":
-                    user = new Administrator(name, password, role);
-                    break;
-                case "operator":
-                    user = new Operator(name, password, role);
-                    break;
-                default:
-                    user = new Browser(name, password, role);
+        String sql = "SELECT * FROM user_info WHERE username = ? AND password = ?";
+        try (Connection conn = DatabasePool.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, name);
+            pstmt.setString(2, password);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String role = rs.getString("role");
+                switch (role) {
+                    case "administrator":
+                        return new Administrator(name, password, role);
+                    case "operator":
+                        return new Operator(name, password, role);
+                    default:
+                        return new Browser(name, password, role);
+                }
             }
-            return user;
         }
         return null;
     }
@@ -209,11 +185,10 @@ public class DataProcessing {
         if (!connectToDB) {
             throw new SQLException("Not Connected to Database");
         }
-        sql="select * from user_info";
-        stmt=connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_READ_ONLY);
-        rs=stmt.executeQuery(sql);
-        return rs;
+        String sql = "SELECT * FROM user_info";
+        Connection conn = DatabasePool.getConnection();
+        Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+        return stmt.executeQuery(sql);
     }
 
     /**
@@ -226,20 +201,18 @@ public class DataProcessing {
      * @throws SQLException
      */
     public static boolean updateUser(String name, String password, String role) throws SQLException {
-        stmt=connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-        sql="select * from user_info where username='"+name+"'";
-        rs=stmt.executeQuery(sql);
-        if(!rs.next()){
-            return false;
-        }else{
-            String sql="update user_info set password=?,role=? where username=?";
-            PreparedStatement prestamt=connection.prepareCall(sql);
-            prestamt.setString(1,password);
-            prestamt.setString(2,role);
-            prestamt.setString(3,name);
-            return true;
+        if (!connectToDB) {
+            throw new SQLException("Not Connected to Database");
         }
-
+        String sql = "UPDATE user_info SET password = ?, role = ? WHERE username = ?";
+        try (Connection conn = DatabasePool.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, password);
+            pstmt.setString(2, role);
+            pstmt.setString(3, name);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        }
     }
 
     /**
@@ -252,23 +225,22 @@ public class DataProcessing {
      * @throws SQLException
      */
     public static boolean insertUser(String name, String password, String role) throws SQLException {
-        // 使用PreparedStatement防止SQL注入
-        String checkSql = "SELECT 1 FROM user_info WHERE username = ?";
-        try (PreparedStatement checkStmt = connection.prepareStatement(checkSql)) {
-            checkStmt.setString(1, name);
-            try (ResultSet rs = checkStmt.executeQuery()) {
-                if (rs.next()) {
-                    return false; // 用户已存在
-                }
-            }
+        if (!connectToDB) {
+            throw new SQLException("Not Connected to Database");
         }
-        // 准备插入语句
-        sql = "INSERT INTO user_info (username, password, role) VALUES (?, ?, ?)";
-        try (PreparedStatement insertStmt = connection.prepareStatement(sql)) {
+        String checkSql = "SELECT 1 FROM user_info WHERE username = ?";
+        String insertSql = "INSERT INTO user_info (username, password, role) VALUES (?, ?, ?)";
+        try (Connection conn = DatabasePool.getConnection();
+             PreparedStatement checkStmt = conn.prepareStatement(checkSql);
+             PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+            checkStmt.setString(1, name);
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next()) {
+                return false; // 用户已存在
+            }
             insertStmt.setString(1, name);
             insertStmt.setString(2, password);
             insertStmt.setString(3, role);
-
             int rowsAffected = insertStmt.executeUpdate();
             return rowsAffected > 0;
         }
@@ -285,13 +257,12 @@ public class DataProcessing {
         if (!connectToDB) {
             throw new SQLException("Not Connected to Database");
         }
-        if(searchUser(name)==null){
-            return false;
-        }else{
-            sql="delete from user_info where username='"+name+"'";
-            prestmt=connection.prepareStatement(sql);
-            prestmt.executeUpdate();
-            return true;
+        String sql = "DELETE FROM user_info WHERE username = ?";
+        try (Connection conn = DatabasePool.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, name);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
         }
     }
 
@@ -303,35 +274,15 @@ public class DataProcessing {
      * @throws
      */
     public static void disconnectFromDataBase() {
-        if (connectToDB) {
-// close Statement and Connection
-            try {
-                if(rs!=null){
-                    rs.close();
-                }
-                if (stmt != null) {
-                    stmt.close();
-                }
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            } finally {
-                connectToDB = false;
-            }
-        }
+        connectToDB = false;
     }
 
-    public static void sonnectToDatabase() throws ClassNotFoundException, SQLException {
+    public static void connectToDatabase() throws ClassNotFoundException, SQLException {
         Class.forName("com.mysql.cj.jdbc.Driver");
-        connection = DriverManager.getConnection(DB_URL, USER, PASS);
         connectToDB = true;
-
     }
 
 
     public static void main(String[] args) {
     }
-
 }

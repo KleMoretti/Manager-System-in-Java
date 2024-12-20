@@ -43,13 +43,13 @@
               <text value="Role"/>
             </properties>
           </component>
-          <component id="dcb8c" class="javax.swing.JComboBox" binding="NamecomboBox">
+          <component id="dcb8c" class="javax.swing.JComboBox" binding="nameComboBox">
             <constraints>
               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties/>
           </component>
-          <component id="5b62" class="javax.swing.JComboBox" binding="RolecomboBox">
+          <component id="5b62" class="javax.swing.JComboBox" binding="roleComboBox">
             <constraints>
               <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
@@ -80,7 +80,7 @@
         <properties/>
         <border type="none"/>
         <children>
-          <component id="125b8" class="javax.swing.JButton" binding="OKButton" default-binding="true">
+          <component id="125b8" class="javax.swing.JButton" binding="oKButton" default-binding="true">
             <constraints>
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>

@@ -5,7 +5,6 @@ import javax.swing.plaf.FontUIResource;
 import javax.swing.text.StyleContext;
 import java.awt.*;
 import java.awt.event.*;
-import java.sql.SQLException;
 import java.util.Locale;
 
 
@@ -16,7 +15,7 @@ public class LoginFrame {
     private Main mainFrame;
 
     private JFrame frame;
-    private JPanel OuterPanel;
+    private JPanel outerPanel;
     private JPanel InnerPanel_1;
     private JPanel InnerPanel_2;
     private JPanel InnerPanel_3;
@@ -25,112 +24,66 @@ public class LoginFrame {
     private JButton loginButton;
     private JButton exitButton;
 
-    String userName;
-    String userPassword;
-
-
     public LoginFrame(Main frame) {
         this.mainFrame = frame;
         initializeUI();
     }
 
     private void initializeUI() {
-
         $$$setupUI$$$();
 
-        passwordField1.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String userPassword = new String(passwordField1.getPassword());
-                System.out.println("Password: " + userPassword);
-            }
+        // 设置密码字段的回车键行为
+        passwordField1.addActionListener(e -> {
+            loginButton.doClick(); // 模拟点击登录按钮
         });
 
         // 设置登录按钮的动作监听器
-        loginButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                userName = userNametextField.getText();
-                userPassword = new String(passwordField1.getPassword());
+        loginButton.addActionListener(e -> {
+            String userName = userNametextField.getText();
+            String userPassword = new String(passwordField1.getPassword());
 
-                try {
-                    if (mainFrame.searchUser(userName, userPassword)) {
-                        // 登录成功，可以显示文件浏览界面
-                        loginSuccessfullDialog();
-                       /* try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(
-                                "D:\\@Java\\Object-oriented and multithreaded comprehensive experiment\\Manager System\\uploadfile\\doc.ser"))) {
-                            while (true) {
-                                try {
-                                    Doc doc = (Doc) ois.readObject();
-                                    docs.put(doc.getId(), doc);
-                                } catch (EOFException ex) {
-                                    break; // End of file reached
-                                }
-                            }
-                        } catch (FileNotFoundException exx) {
-                            System.err.println("File not found: " + exx.getMessage());
-                        } catch (IOException | ClassNotFoundException exxx) {
-                            System.err.println("Error reading file: " + exxx.getMessage());
-                        }*/
-
-                    } else {
-                        // 登录失败，显示错误对话框
-                        loginFalseDialog();
-                    }
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                    JOptionPane.showMessageDialog(LoginFrame.this.$$$getRootComponent$$$(), "Database error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                }
-
-            }
+            mainFrame.attemptLogin(userName, userPassword)
+                    .thenAcceptAsync(isSuccess -> {
+                        if (isSuccess) {
+                            // 登录成功，显示文件浏览界面
+                            SwingUtilities.invokeLater(() -> loginSuccessfulDialog());
+                        } else {
+                            // 登录失败，显示错误对话框
+                            SwingUtilities.invokeLater(() -> loginFailedDialog());
+                        }
+                    }, SwingUtilities::invokeLater)
+                    .exceptionally(throwable -> {
+                        // 如果有异常发生，显示错误信息
+                        SwingUtilities.invokeLater(() -> {
+                            JOptionPane.showMessageDialog(frame, "An error occurred during login.", "Error", JOptionPane.ERROR_MESSAGE);
+                        });
+                        return null;
+                    });
         });
 
         // 设置退出按钮的动作监听器
-        exitButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.exit(0);
-            }
-        });
+        exitButton.addActionListener(e -> System.exit(0));
 
-
+        // 设置用户名字段的回车键行为
         userNametextField.addKeyListener(new KeyAdapter() {
             @Override
-            public void keyTyped(KeyEvent e) {
-                switch (e.getKeyChar()) {
-                    case KeyEvent.VK_ENTER:
-                        userNametextField.transferFocus();
-                        break;
-                    default:
-                        break;
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    passwordField1.requestFocusInWindow();
                 }
             }
         });
     }
 
-    public void loginFalseDialog() {
-        JButton errorReturnButton = new JButton("OK");
-        Dialog dialog = new Dialog(new Frame(), "Error", true);
-        dialog.add(new JLabel("Invalid username or password!"), BorderLayout.CENTER);
-        dialog.add(errorReturnButton, BorderLayout.SOUTH);
-        dialog.setSize(200, 100);
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();  //获取到屏幕尺寸
-        dialog.setLocation((int) ((screenSize.getWidth() - frame.getWidth()) / 2), (int) ((screenSize.getHeight() - frame.getHeight()) / 2));
-        errorReturnButton.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                dialog.setVisible(false);
-                userNametextField.setText("");
-                passwordField1.setText("");
-            }
-        });
-        dialog.setVisible(true);
-
+    private void loginFailedDialog() {
+        JOptionPane.showMessageDialog(frame, "Invalid username or password!", "Login Failed", JOptionPane.ERROR_MESSAGE);
+        userNametextField.setText("");
+        passwordField1.setText("");
     }
 
-    public void loginSuccessfullDialog() {
+    private void loginSuccessfulDialog() {
         // 创建登录成功对话框
-        JDialog successDialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(OuterPanel), "Login Success", true); // 模态对话框
+        JDialog successDialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(outerPanel), "Login Successful", true); // 模态对话框
         successDialog.setLayout(new BorderLayout());
         successDialog.setSize(300, 150);
         successDialog.setLocationRelativeTo(null); // 居中显示
@@ -139,36 +92,42 @@ public class LoginFrame {
         messageLabel.setFont(messageLabel.getFont().deriveFont(Font.BOLD, 20f));
         successDialog.add(messageLabel, BorderLayout.CENTER);
 
-        // 设置定时器，在2秒后自动关闭对话框
-        Timer timer = new Timer(1000, new ActionListener() {
+        // 设置定时器，在2秒后自动关闭对话框并切换到文件浏览界面
+        Timer timer = new Timer(2000, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 successDialog.dispose(); // 关闭对话框
-                mainFrame.closeLoginFrame(); // 关闭登录界面
-                mainFrame.loginSuccess(userName, userPassword);
+                mainFrame.showFileBrowsingFrameAfterLogin();
             }
         });
-        // 只执行一次
         timer.setRepeats(false);
         timer.start();
+
         // 显示对话框
         successDialog.setVisible(true);
     }
 
-    void show() {
-        frame = new JFrame("LoginFrame");
-        frame.setContentPane(OuterPanel);
+    public void show() {
+        frame = new JFrame("Login Frame");
+        frame.setContentPane(outerPanel);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(500, 300);
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();  //获取到屏幕尺寸
-        frame.setLocation((int) ((screenSize.getWidth() - frame.getWidth()) / 2), (int) ((screenSize.getHeight() - frame.getHeight()) / 2));
         frame.pack();
+        frame.setLocationRelativeTo(null); // 居中显示
         frame.setVisible(true);
     }
 
-
     public void dispose() {
-        frame.dispose();
+        if (frame != null) {
+            frame.dispose();
+        }
+    }
+
+    public void setVisible(boolean visible) {
+        if (visible) {
+            show();
+        } else {
+            dispose();
+        }
     }
 
     {
@@ -186,13 +145,13 @@ public class LoginFrame {
      * @noinspection ALL
      */
     private void $$$setupUI$$$() {
-        OuterPanel = new JPanel();
-        OuterPanel.setLayout(new BorderLayout(0, 0));
+        outerPanel = new JPanel();
+        outerPanel.setLayout(new BorderLayout(0, 0));
         InnerPanel_1 = new JPanel();
         InnerPanel_1.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
         InnerPanel_1.setOpaque(false);
         InnerPanel_1.setPreferredSize(new Dimension(148, 80));
-        OuterPanel.add(InnerPanel_1, BorderLayout.NORTH);
+        outerPanel.add(InnerPanel_1, BorderLayout.NORTH);
         final JLabel label1 = new JLabel();
         label1.setBackground(new Color(-1442564));
         Font label1Font = this.$$$getFont$$$(null, -1, 24, label1.getFont());
@@ -202,7 +161,7 @@ public class LoginFrame {
         InnerPanel_1.add(label1, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         InnerPanel_2 = new JPanel();
         InnerPanel_2.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(0, 50, 0, 50), -1, -1));
-        OuterPanel.add(InnerPanel_2, BorderLayout.CENTER);
+        outerPanel.add(InnerPanel_2, BorderLayout.CENTER);
         userNametextField = new JTextField();
         InnerPanel_2.add(userNametextField, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         final JLabel label2 = new JLabel();
@@ -219,7 +178,7 @@ public class LoginFrame {
         InnerPanel_2.add(label3, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         InnerPanel_3 = new JPanel();
         InnerPanel_3.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 2, new Insets(20, 50, 20, 50), -1, -1));
-        OuterPanel.add(InnerPanel_3, BorderLayout.SOUTH);
+        outerPanel.add(InnerPanel_3, BorderLayout.SOUTH);
         exitButton = new JButton();
         Font exitButtonFont = this.$$$getFont$$$(null, -1, 18, exitButton.getFont());
         if (exitButtonFont != null) exitButton.setFont(exitButtonFont);
@@ -258,8 +217,9 @@ public class LoginFrame {
      * @noinspection ALL
      */
     public JComponent $$$getRootComponent$$$() {
-        return OuterPanel;
+        return outerPanel;
     }
+
 
 
 }
