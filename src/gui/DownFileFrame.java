@@ -1,8 +1,6 @@
 package gui;
 
 import console.DataProcessing;
-import console.Doc;
-import console.DocClient;
 import console.ResultSetData;
 
 import javax.swing.*;
@@ -15,7 +13,7 @@ import java.io.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
+
 
 public class DownFileFrame {
     FileBrowsingFrame fileBrowsingFrame;
@@ -26,11 +24,7 @@ public class DownFileFrame {
     private JPanel OuterPanelDownload;
     private JPanel UppperJPanel;
     private JPanel LowerJPanel;
-    JFrame frame;
 
-    public static void main(String[] args) {
-
-    }
 
     DownFileFrame(FileBrowsingFrame fileBrowsingFrame) {
         this.fileBrowsingFrame = fileBrowsingFrame;
@@ -46,9 +40,8 @@ public class DownFileFrame {
                 // 清空现有的数据
                 DefaultTableModel model = (DefaultTableModel) Table.getModel();
                 model.setRowCount(0);  // 清空所有行
-                try  {
+                try {
                     fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> LIST_DOC");
-
                     String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
                     if (!"LIST_DOC_SUCCESS".equals(response)) {
                         System.err.println("Failed to list documents");
@@ -91,12 +84,35 @@ public class DownFileFrame {
                     for (int i = 0; i < 5; i++) {
                         rowData[i] = Table.getValueAt(selectedRow, i);
                     }
-                    try  {
+                    try {
                         fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> DOWNLOAD_FILE " + rowData[0]);
+                        String downloadpath = "D:\\@Java\\Object-oriented and multithreaded comprehensive experiment\\Manager System\\downloadfile\\";
+                        String filename = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
+                        File file = new File(downloadpath + filename);
+                        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file))) {
+                            byte[] buffer = new byte[4096];
+                            int bytesRead;
+                            while (true) {
+                                Object object = fileBrowsingFrame.mainFrame.client.receiveMessage().join();
+                                if (object instanceof byte[]) {
+                                    byte[] bytes = (byte[]) object;
+                                    bos.write(bytes);
+                                } else {
+                                    String response = object.toString();
+                                    if ("DOWNLOAD_FILE_END".equals(response)) {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                         String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
                         if ("DOWNLOAD_FILE_SUCCESS".equals(response)) {
                             showSuccessDialog();
                             System.out.println("Download success!");
+                        } else if ("DOWNLOAD_FILE_FAILED".equals(response)) {
+                            JOptionPane.showMessageDialog(null, "Download file failed!", "Failure", JOptionPane.ERROR_MESSAGE);
+                        } else {
+                            System.err.println("Unknown error.");
                         }
                     } catch (IOException ex) {
                         ex.printStackTrace();
@@ -111,33 +127,6 @@ public class DownFileFrame {
         show();
     }
 
-    /*private void updateDocFileData(Object[] rowData) throws IOException, SQLException {
-        byte[] buffer = new byte[1024];
-
-        String uploadpath = "D:\\@Java\\Object-oriented and multithreaded comprehensive experiment\\Manager System\\uploadfile\\";
-        String downloadpath = "D:\\@Java\\Object-oriented and multithreaded comprehensive experiment\\Manager System\\downloadfile\\";
-
-        Doc doc = DataProcessing.searchDoc(rowData[0].toString());
-
-        File tempFile = new File(uploadpath + doc.getFilename());
-        String filename = tempFile.getName();
-
-        BufferedInputStream infile = new BufferedInputStream(new FileInputStream(tempFile));
-        BufferedOutputStream targetfile = new BufferedOutputStream(new FileOutputStream(downloadpath + filename));
-
-        while (true) {
-            int byteRead = infile.read(buffer);
-            if (byteRead == -1) {
-                break;
-            }
-            targetfile.write(buffer, 0, byteRead);
-        }
-        infile.close();
-        targetfile.close();
-
-        // 创建下载成功对话框
-        showSuccessDialog();
-    }*/
 
     public void show() {
         // 设置选择模式为单选，并且只能选择整行（如果还没有设置）

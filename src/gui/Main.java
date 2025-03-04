@@ -62,7 +62,6 @@ public class Main {
                         return false;
                     }
                 } else {
-                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null, "Invalid username or password!"));
                     return false;
                 }
             } catch (IOException | RuntimeException ex) {

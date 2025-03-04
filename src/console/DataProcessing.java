@@ -277,12 +277,5 @@ public class DataProcessing implements Serializable {
         connectToDB = false;
     }
 
-    public static void connectToDatabase() throws ClassNotFoundException, SQLException {
-        Class.forName("com.mysql.cj.jdbc.Driver");
-        connectToDB = true;
-    }
 
-
-    public static void main(String[] args) {
-    }
 }

@@ -24,22 +24,6 @@ public class DocClient implements Serializable , AutoCloseable {
         this.socket = new Socket(host, port);
         this.oos = new ObjectOutputStream(socket.getOutputStream());
         this.ois = new ObjectInputStream(socket.getInputStream());
-        startReceiveThread(); // Start receiving messages
-    }
-
-    private void startReceiveThread() {
-        executorService.submit(() -> {
-            while (running.get()) {
-
-            }
-        });
-    }
-
-    private synchronized void handleServerResponse(Object response) {
-        // Implement your logic to handle the server's response here
-        System.out.println("Received from server: " + response);
-
-        // Optionally notify listeners or update state
     }
 
 
@@ -47,6 +31,30 @@ public class DocClient implements Serializable , AutoCloseable {
         lock.lock();
         try {
             oos.writeObject(message);
+            oos.flush();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public  void sendMessage(Object message) throws IOException {
+        lock.lock();
+        try {
+            if (message instanceof byte[]) {
+                // 如果传递的是字节数组（文件内容），直接写入流
+                oos.write((byte[]) message);
+            } else {
+                oos.writeObject(message);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void sendBytes(byte[] data, int length) throws IOException {
+        lock.lock();
+        try {
+            oos.write(data, 0, length); // 直接发送字节流
             oos.flush();
         } finally {
             lock.unlock();
@@ -69,20 +77,6 @@ public class DocClient implements Serializable , AutoCloseable {
         });
     }
 
-
-    public synchronized CompletableFuture<String> sendAndWaitForResponse(String message) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                sendMessage(message);
-                Object response = ois.readObject(); // Block until a response is received
-                return response.toString(); // Convert response to Stringreturn response;
-            } catch (StreamCorruptedException e) {
-                throw new RuntimeException("Stream corrupted: " + e.getMessage(), e);
-            } catch (IOException | ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
 
     @Override
     public synchronized void close() {
@@ -107,29 +101,5 @@ public class DocClient implements Serializable , AutoCloseable {
         }
     }
 
-    public boolean isConnected() {
-        return !socket.isClosed();
-    }
-
-    public void reconnect() throws IOException {
-        close(); // Close existing connection first
-        this.socket = new Socket("localhost", 9999); // Use actual host and port
-        this.oos = new ObjectOutputStream(socket.getOutputStream());
-        this.ois = new ObjectInputStream(socket.getInputStream());
-        startReceiveThread(); // Restart the receive thread
-    }
-
-    public static void main(String[] args) {
-        try (DocClient client = new DocClient("localhost", 9999)) {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("Connected to server. Type commands:");
-            String line;
-            while ((line = reader.readLine()) != null && client.isConnected()) {
-                client.sendAndWaitForResponse(line).thenAccept(System.out::println);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
 }

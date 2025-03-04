@@ -1,20 +1,15 @@
 package gui;
 
-import console.DataProcessing;
-import console.DatabasePool;
-import console.DocClient;
 import console.ResultSetData;
 
 import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
 import javax.swing.text.StyleContext;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
@@ -29,7 +24,7 @@ public class ChangeUserFrame {
     private JLabel PasswordJLabel;
     private JLabel RoleLabel;
     private JButton oKButton;
-    private JButton exitButton;
+    private JButton refreshButton;
     private JPanel OuterJPanel;
     private JPanel ChangeJPanel;
     private JPanel ButtonJPanel;
@@ -40,6 +35,7 @@ public class ChangeUserFrame {
     public ChangeUserFrame(FileBrowsingFrame fileBrowsingFrame) {
         this.fileBrowsingFrame = fileBrowsingFrame;
         initializeUI();
+
     }
 
     private void initializeUI() {
@@ -49,6 +45,8 @@ public class ChangeUserFrame {
 
         // 设置OK按钮的动作监听器
         oKButton.addActionListener(e -> updateUserInfo());
+
+        refreshButton.addActionListener(e -> populateNameComboBox());
     }
 
     private void populateNameComboBox() {
@@ -102,7 +100,6 @@ public class ChangeUserFrame {
 
         // Use actual server address and port
         try {
-
             fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> UPDATE_USER " + name + " " + password + " " + role);
             String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
             if ("UPDATE_SUCCESS".equals(response)) {
@@ -123,14 +120,6 @@ public class ChangeUserFrame {
         passwordField.setText("");
         nameComboBox.setSelectedIndex(0);
         roleComboBox.setSelectedIndex(0);
-    }
-
-    public void show() {
-        frame.setContentPane(OuterJPanel);
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.pack();
-        frame.setLocationRelativeTo(null); // 居中显示
-        frame.setVisible(true);
     }
 
 
@@ -199,9 +188,9 @@ public class ChangeUserFrame {
         oKButton = new JButton();
         oKButton.setText("OK");
         ButtonJPanel.add(oKButton, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        exitButton = new JButton();
-        exitButton.setText("Exit");
-        ButtonJPanel.add(exitButton, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        refreshButton = new JButton();
+        refreshButton.setText("Refresh");
+        ButtonJPanel.add(refreshButton, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
     }
 
     /**

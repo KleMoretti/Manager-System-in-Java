@@ -8,22 +8,29 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.*;
+
+/**
+ * The DocServer class represents a multi-threaded server that handles various client requests.
+ */
 
 public class DocServer {
     private static final int PORT = 9999;
     private static final ExecutorService threadPool = Executors.newCachedThreadPool();
     private int counter = 1;
-    private ServerSocket server; // server socket
-    private Socket connection; // connection to client
 
-
+    /**
+     * The main method to start the server.
+     *
+     * @param args Command line arguments.
+     */
     public static void main(String[] args) {
         try (ServerSocket server = new ServerSocket(PORT)) {
             System.out.println("Server started on port " + PORT);
 
+            System.out.println("Waiting for connection...");
             while (true) {
-                System.out.println("Waiting for connection...");
                 Socket connection = server.accept();
                 System.out.println("Connection received from: " + connection.getInetAddress().getHostName());
 
@@ -37,9 +44,17 @@ public class DocServer {
         }
     }
 
+    /**
+     * The ClientHandler class handles client requests in a separate thread.
+     */
     private static class ClientHandler implements Runnable {
         private final Socket socket;
 
+        /**
+         * Constructor for ClientHandler.
+         *
+         * @param socket The client socket.
+         */
         public ClientHandler(Socket socket) {
             this.socket = socket;
         }
@@ -50,7 +65,7 @@ public class DocServer {
                  ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream())) {
 
                 while (!socket.isClosed()) {
-                    socket.setSoTimeout(10000);
+                    socket.setSoTimeout(5000);
                     try {
                         String message = (String) ois.readObject();
                         if (message == null || message.isEmpty()) {
@@ -82,30 +97,47 @@ public class DocServer {
             }
         }
 
-
+        /**
+         * Processes the received message and performs the corresponding action.
+         *
+         * @param message The received message.
+         * @param ois     The ObjectInputStream to read from.
+         * @param oos     The ObjectOutputStream to write to.
+         * @throws IOException If an I/O error occurs.
+         */
         private static void processMessage(String message, ObjectInputStream ois, ObjectOutputStream oos) throws IOException {
             System.out.println("服务器收到的信息: " + message);
             String response = "UNKNOWN_COMMAND";
-            if (message.startsWith("CLIENT>>> USER_LOGIN")) {
-                handleUserLogin(ois, oos, message);
-            } else if (message.startsWith("CLIENT>>> ADD_USER")) {
-                handleAddUser(ois, oos, message);
-            } else if (message.startsWith("CLIENT>>> DELETE_USER")) {
-                handleDeleteUser(ois, oos, message);
-            } else if (message.startsWith("CLIENT>>> UPDATE_USER")) {
-                handleUpdateUser(ois, oos, message);
-            } else if (message.startsWith("CLIENT>>> LIST_USER")) {
-                handleListUser(ois, oos);
-            } else if (message.startsWith("CLIENT>>> DOWNLOAD_FILE")) {
-                handleDownloadFile(ois, oos, message);
-            } else if (message.startsWith("CLIENT>>> LIST_DOC")) {
-                handleListDoc(ois, oos);
-            } else if (message.startsWith("CLIENT>>> FIlE_DESCRIPTION")) {
-                handleFileDiscription(ois, oos, message);
-            } else if (message.startsWith("CLIENT>>> FILE_UPLOAD")) {
-                handleFileUpload(ois, oos, message);
-            } else if (message.startsWith("CLIENT>>> EXIT")) {
-                handleExit(ois, oos, message);
+            try {
+                if (message.startsWith("CLIENT>>> USER_LOGIN")) {
+                    handleUserLogin(ois, oos, message);
+                } else if (message.startsWith("CLIENT>>> ADD_USER")) {
+                    handleAddUser(ois, oos, message);
+                } else if (message.startsWith("CLIENT>>> DELETE_USER")) {
+                    handleDeleteUser(ois, oos, message);
+                } else if (message.startsWith("CLIENT>>> UPDATE_USER")) {
+                    handleUpdateUser(ois, oos, message);
+                } else if (message.startsWith("CLIENT>>> LIST_USER")) {
+                    handleListUser(ois, oos);
+                } else if (message.startsWith("CLIENT>>> DOWNLOAD_FILE")) {
+                    handleDownloadFile(ois, oos, message);
+                } else if (message.startsWith("CLIENT>>> LIST_DOC")) {
+                    handleListDoc(ois, oos);
+                } else if (message.startsWith("CLIENT>>> FIlE_DESCRIPTION")) {
+                    handleFileDiscription(ois, oos, message);
+                } else if (message.startsWith("CLIENT>>> FILE_UPLOAD")) {
+                    handleFileUpload(ois, oos, message);
+                } else if (message.startsWith("CLIENT>>> EXIT")) {
+                    handleExit(ois, oos, message);
+                } else {
+                    System.err.println("Invalid message format: " + message);
+                    oos.writeObject(response);
+                    oos.flush();
+                }
+            } catch (Exception e) {
+                System.err.println("Error processing message: " + e.getMessage());
+                oos.writeObject("ERROR_OCCURRED");
+                oos.flush();
             }
         }
 
@@ -115,15 +147,14 @@ public class DocServer {
                 oos.writeObject("EXIT_SUCCESS");
                 oos.flush();
                 System.out.println("Exit success");
-                System.exit(0);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
 
-        private static boolean handleFileUpload(ObjectInputStream ois, ObjectOutputStream oos, String message) {
+        private static boolean handleFileUpload(ObjectInputStream ois, ObjectOutputStream oos, String message) throws IOException {
             String[] parts = message.split(" ");
-            if (parts.length < 9) {
+            if (parts.length < 7) {
                 try {
                     oos.writeObject("UPDATE_FAILED");
                     oos.flush();
@@ -137,34 +168,58 @@ public class DocServer {
             String creator = parts[3];
             Timestamp createTime = Timestamp.valueOf(parts[4] + " " + parts[5]);
             String description = parts[6];
-            String filename = parts[8];
+
+            String filename;
+            try {
+                filename = ois.readObject().toString();
+            } catch (ClassNotFoundException e) {
+                throw new IOException("Error reading filename", e);
+            }
+
             try {
                 DataProcessing.init();
-                byte[] buffer = new byte[1024];
                 Doc doc = DataProcessing.searchDoc(Id);
                 String uploadpath = "D:\\@Java\\Object-oriented and multithreaded comprehensive experiment\\Manager System\\uploadfile\\";
-                if (doc == null) {
-                    BufferedInputStream infile = new BufferedInputStream(new FileInputStream(parts[7]));
-                    BufferedOutputStream targetfile = new BufferedOutputStream(new FileOutputStream(uploadpath + filename));
-                    while (true) {
-                        int byteRead = infile.read(buffer);
-                        if (byteRead == -1) {
+                if (doc != null) {
+                    oos.writeObject("ID_ALREADY_EXISTS");
+                    System.out.println("Document with the same ID exists.");
+                    oos.flush();
+                    return false;
+                } else {
+                    oos.writeObject("NONE_SAME_ID");
+                    oos.flush();
+                }
+
+                try (BufferedOutputStream targetFile = new BufferedOutputStream(new FileOutputStream(uploadpath + filename))) {
+                    byte[] buffer = new byte[8192];
+                    int bytesRead;
+
+                    while ((bytesRead = ois.read(buffer)) != -1) {
+                        String checkEnd = new String(buffer, 0, bytesRead).trim();
+                        if (checkEnd.endsWith("FILE_UPLOAD_END")) {
                             break;
                         }
-                        targetfile.write(buffer, 0, byteRead);
+                        targetFile.write(buffer, 0, bytesRead);
                     }
-                    infile.close();
-                    targetfile.close();
+
+                    targetFile.flush();
+
                     DataProcessing.insertDoc(Id, creator, createTime, description, filename);
                     oos.writeObject("UPLOAD_SUCCESS");
                     System.out.println("Update File success");
                     oos.flush();
                     return true;
-                } else {
-                    oos.writeObject("ID_ALREADY_EXISTS");
-                    System.out.println("Having the same id");
+                }
+
+
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                try {
+                    oos.writeObject("UPDATE_FAILED");
                     oos.flush();
                     return false;
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
                 }
             } catch (SQLException | IOException e) {
                 e.printStackTrace();
@@ -243,31 +298,45 @@ public class DocServer {
 
         private static void handleAddUser(ObjectInputStream ois, ObjectOutputStream oos, String message) throws IOException {
             String[] parts = message.split(" ");
+            if (parts.length < 5) {
+                System.err.println("Invalid message format.");
+                oos.writeObject("ADD_FAILED");
+                oos.flush();
+                return;
+            }
             String userName = parts[2];
             String password = parts[3];
             String role = parts[4];
             DataProcessing.init();
             try {
-                DataProcessing.insertUser(userName, password, role);
-                oos.writeObject("ADD_SUCCESS");
-                System.out.println("Add user success: " + userName + " " + role);
-                oos.flush();
+                if (DataProcessing.insertUser(userName, password, role)) {
+                    oos.writeObject("ADD_SUCCESS");
+                    System.out.println("Add user success: " + userName + " " + role);
+                    oos.flush();
+                } else {
+                    oos.writeObject("ADD_FAILED");
+                    System.err.println("Add user failed: " + userName + " " + role);
+                    oos.flush();
+                }
             } catch (SQLException e) {
                 e.printStackTrace();
                 oos.writeObject("ADD_FAILED");
+                System.err.println("Add user failed: " + userName + " " + role);
                 oos.flush();
             }
             DataProcessing.disconnectFromDataBase();
         }
 
 
-        private static boolean handleUserLogin(ObjectInputStream ois, ObjectOutputStream oos, String message) {
+        private static boolean handleUserLogin(ObjectInputStream ois, ObjectOutputStream oos, String message) throws IOException {
             if (message == null || message.isEmpty()) {
                 return false;
             }
             String[] parts = message.split(" ");
             if (parts.length < 4) {
                 System.err.println("Invalid message format.");
+                oos.writeObject("LOGIN_FAILED");
+                oos.flush();
                 return false;
             }
             String userName = parts[2];
@@ -285,7 +354,7 @@ public class DocServer {
             } catch (SQLException | IOException e) {
                 e.printStackTrace();
                 try {
-                    oos.writeObject("LOGIN_ERROR");
+                    oos.writeObject("LOGIN_FAILED");
                     oos.flush();
                 } catch (IOException ex) {
                     ex.printStackTrace();
@@ -296,8 +365,15 @@ public class DocServer {
 
         private static void handleDeleteUser(ObjectInputStream ois, ObjectOutputStream oos, String message) throws IOException {
             String[] parts = message.split(" ");
+            if (parts.length < 3) {
+                System.err.println("Invalid message format.");
+                oos.writeObject("DELETE_FAILED");
+                oos.flush();
+                return;
+            }
             String userName = parts[2];
             DataProcessing.init();
+
             try {
                 DataProcessing.deleteUser(userName);
                 oos.writeObject("DELETE_SUCCESS");
@@ -310,20 +386,32 @@ public class DocServer {
                 oos.flush();
             }
             DataProcessing.disconnectFromDataBase();
-
         }
 
         private static void handleUpdateUser(ObjectInputStream ois, ObjectOutputStream oos, String message) throws IOException {
             String[] parts = message.split(" ");
+            if (parts.length < 5) {
+                System.err.println("Invalid message format.");
+                oos.writeObject("UPDATE_FAILED");
+                oos.flush();
+                return;
+            }
             String userName = parts[2];
             String newPassword = parts[3];
             String role = parts[4];
             DataProcessing.init();
             try {
-                DataProcessing.updateUser(userName, newPassword, role);
-                oos.writeObject("UPDATE_SUCCESS");
-                System.out.println("Update user success: " + userName);
-                oos.flush();
+                boolean isSuccess = DataProcessing.updateUser(userName, newPassword, role);
+                if (!isSuccess) {
+                    oos.writeObject("UPDATE_FAILED");
+                    System.out.println("Update user failed.");
+                    oos.flush();
+                    return;
+                } else {
+                    oos.writeObject("UPDATE_SUCCESS");
+                    System.out.println("Update user success: " + userName);
+                    oos.flush();
+                }
             } catch (SQLException e) {
                 e.printStackTrace();
                 oos.writeObject("UPDATE_FAILED");
@@ -372,32 +460,39 @@ public class DocServer {
         private static boolean handleDownloadFile(InputStream inputStream, ObjectOutputStream oos, String message) throws IOException {
             String[] parts = message.split(" ");
             String Id = parts[2];
+            if (parts.length < 3) {
+                System.err.println("Invalid message format.");
+                oos.writeObject("DOWNLOAD_FILE_FAILURE");
+                oos.flush();
+                return false;
+            }
             try {
                 DataProcessing.init();
                 Doc doc = DataProcessing.searchDoc(Id);
                 if (doc != null) {
                     System.out.println("Download file:" + doc.getFilename());
-                    byte[] buffer = new byte[1024];
-
+                    oos.writeObject(doc.getFilename());
+                    oos.flush();
                     String uploadpath = "D:\\@Java\\Object-oriented and multithreaded comprehensive experiment\\Manager System\\uploadfile\\";
-                    String downloadpath = "D:\\@Java\\Object-oriented and multithreaded comprehensive experiment\\Manager System\\downloadfile\\";
-
 
                     File tempFile = new File(uploadpath + doc.getFilename());
-                    String filename = tempFile.getName();
-
-                    BufferedInputStream infile = new BufferedInputStream(new FileInputStream(tempFile));
-                    BufferedOutputStream targetfile = new BufferedOutputStream(new FileOutputStream(downloadpath + filename));
-
-                    while (true) {
-                        int byteRead = infile.read(buffer);
-                        if (byteRead == -1) {
-                            break;
-                        }
-                        targetfile.write(buffer, 0, byteRead);
+                    if(!tempFile.exists()){
+                        oos.writeObject("DOWNLOAD_FILE_FAILURE");
+                        oos.flush();
+                        return false;
                     }
-                    infile.close();
-                    targetfile.close();
+
+                    try (FileInputStream fis = new FileInputStream(tempFile)) {
+                        byte[] buffer = new byte[4096];
+                        int bytesRead;
+                        while ((bytesRead = fis.read(buffer)) != -1) {
+                            oos.writeObject(Arrays.copyOf(buffer, bytesRead));
+                            oos.flush();
+                        }
+                        oos.writeObject("DOWNLOAD_FILE_END");
+                        oos.flush();
+                    }
+
                     oos.writeObject("DOWNLOAD_FILE_SUCCESS");
                     oos.flush();
                     return true;

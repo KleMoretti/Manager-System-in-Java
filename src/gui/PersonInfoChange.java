@@ -87,7 +87,7 @@ public class PersonInfoChange {
                 } else if (!passwordPersonChangeFirst.equals(passwordPersonChangeSecond)) {
                     matchPasswordFalsePersonDialog();
                 } else {
-                    try  {
+                    try {
                         fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> UPDATE_USER " + fileBrowsingFrame.mainFrame.user.getName() + " " + passwordPersonChangeFirst + " " + fileBrowsingFrame.mainFrame.user.getRole());
                         String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
                         if ("UPDATE_SUCCESS".equals(response)) {
@@ -194,10 +194,18 @@ public class PersonInfoChange {
             @Override
             public void mouseClicked(MouseEvent e) {
                 dialog.setVisible(false);
-                userNameInputField.setText("");
-                passwordField1.setText("");
-                passwordField2.setText("");
-                passwordField3.setText("");
+                if (!userNameInputField.getText().isEmpty()) {
+                    userNameInputField.setText("");
+                }
+                if (!passwordField1.getText().isEmpty()) {
+                    passwordField1.setText("");
+                }
+                if (!passwordField2.getText().isEmpty()) {
+                    passwordField2.setText("");
+                }
+                if (!passwordField3.getText().isEmpty()) {
+                    passwordField3.setText("");
+                }
             }
         });
         dialog.setVisible(true);

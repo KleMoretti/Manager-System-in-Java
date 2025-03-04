@@ -16,10 +16,6 @@ public class CardManager {
         cardLayoutPanel.setLayout(cardLayout);
     }
 
-    public void addContentPanel(String key,String newDetails){
-        JPanel panel=createContentPanel(key,newDetails);
-        cardLayoutPanel.add(panel,key);
-    }
 
     public void addContentPanel(String key,JPanel panel){
         cardLayoutPanel.add(key,panel);
@@ -32,46 +28,8 @@ public class CardManager {
         }
     }
 
-    public void updateContentPanel(String key,String newDetails){
-        Component component = getComponentByKey(key);
-        if (component instanceof JPanel) {
-            JPanel panel = (JPanel) component;
-            // 假设每个面板都有一个中心组件，通常是JLabel
-            for (Component c : panel.getComponents()) {
-                if (c instanceof JLabel) {
-                    ((JLabel) c).setText(newDetails);
-                }
-            }
-        }
-    }
 
-    private JPanel createContentPanel(String title, String details) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(title));
-        JLabel label = new JLabel(details, SwingConstants.CENTER);
-        label.setFont(new Font("Arial", Font.PLAIN, 16));
-        panel.add(label, BorderLayout.CENTER);
-        panel.setName(title);  // 设置面板的名称
-        return panel;
-    }
 
-    private Component getComponentByKey(String key) {
-        for (int i = 0; i < cardLayoutPanel.getComponentCount(); i++) {
-            Component comp = cardLayoutPanel.getComponent(i);
-            if (comp.getName() != null && comp.getName().equals(key)) {
-                return comp;
-            }
-        }
-        return null;
-    }
-
-    public CardLayout getCardLayout() {
-        return cardLayout;
-    }
-
-    public JPanel getCardLayoutPanel() {
-        return cardLayoutPanel;
-    }
 
     public void setListUnabled(JList myList, Set<Integer> disabledIndices) {
         myList.setSelectionModel(new DefaultListSelectionModel() {

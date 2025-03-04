@@ -1,6 +1,5 @@
 package gui;
 
-import console.DocClient;
 import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
 import javax.swing.text.StyleContext;
@@ -49,10 +48,13 @@ public class AddNewUserForm {
             if (!passwordJTextField.getText().equals(passwordInputAgainJtextField.getText())) {
                 JOptionPane.showMessageDialog(null, "The password is not the same!", "Error", JOptionPane.ERROR_MESSAGE);
             }
+            if (nameJTextField.getText().equals(fileBrowsingFrame.currentUser.getName())) {
+                JOptionPane.showMessageDialog(null, "You can't add yourself!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
             //DocClient.setMessage("ADD_USER" + " " + nameJTextField.getText() + " " + passwordJTextField.getText() + " " + rolecomBox.getSelectedItem().toString());
             //如果add成功，在服务器端增加，返回true，这里的Dataprocessing应该被舍弃
-            try  {
-               fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> ADD_USER" + " " + nameJTextField.getText() + " " + passwordJTextField.getText() + " " + rolecomBox.getSelectedItem().toString());
+            try {
+                fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> ADD_USER" + " " + nameJTextField.getText() + " " + passwordJTextField.getText() + " " + rolecomBox.getSelectedItem().toString());
                 String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
                 if ("ADD_SUCCESS".equals(response)) {
                     System.out.println("Add success!");

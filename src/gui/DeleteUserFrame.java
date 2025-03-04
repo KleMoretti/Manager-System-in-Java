@@ -1,15 +1,11 @@
 package gui;
 
-import console.DataProcessing;
-import console.DocClient;
 import console.ResultSetData;
 
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -28,16 +24,6 @@ public class DeleteUserFrame {
     private JPanel showUserPanel;
     private JPanel buttonPanel;
 
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("DeleteUserFrame");
-            frame.setContentPane(new DeleteUserFrame(new FileBrowsingFrame(null)).outerPanel);
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.pack();
-            frame.setVisible(true);
-        });
-    }
 
     public DeleteUserFrame(FileBrowsingFrame fileBrowsingFrame) {
         this.fileBrowsingFrame = fileBrowsingFrame;
@@ -58,18 +44,23 @@ public class DeleteUserFrame {
             String password = userShowTable.getValueAt(selectedRow, 1).toString();
             String role = userShowTable.getValueAt(selectedRow, 2).toString();
 
-            try {
-                fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> DELETE_USER" + " " + username + " " + password + " " + role);
-                String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
-                if (!"DELETE_SUCCESS".equals(response)) {
-                    System.err.println("Failed to delete user");
+            if (username.equals(fileBrowsingFrame.mainFrame.user.getName())) {
+                JOptionPane.showMessageDialog(null, "You can't delete yourself!", "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            } else {
+                try {
+                    fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> DELETE_USER" + " " + username + " " + password + " " + role);
+                    String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
+                    if (!"DELETE_SUCCESS".equals(response)) {
+                        System.err.println("Failed to delete user");
+                        JOptionPane.showMessageDialog(null, "Failed to delete user.", "Error", JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Delete user success!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                     JOptionPane.showMessageDialog(null, "Failed to delete user.", "Error", JOptionPane.ERROR_MESSAGE);
-                } else {
-                    JOptionPane.showMessageDialog(null, "Delete user success!", "Success", JOptionPane.INFORMATION_MESSAGE);
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-                JOptionPane.showMessageDialog(null, "Failed to delete user.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } else {
             JOptionPane.showMessageDialog(null, "No row selected!", "Warning", JOptionPane.WARNING_MESSAGE);
@@ -80,32 +71,54 @@ public class DeleteUserFrame {
 
     private void refreshUserList() {
         DefaultTableModel model = (DefaultTableModel) userShowTable.getModel();
-        model.setRowCount(0);  // 清空所有行
-        try {
-            fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> LIST_USER");
+        SwingUtilities.invokeLater(() -> model.setRowCount(0));  // 清空所有行
 
-            String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
-            if (!"LIST_USER_SUCCESS".equals(response)) {
-                System.err.println("Failed to list documents");
-                JOptionPane.showMessageDialog(null, "Failed to refresh user list.", "Error", JOptionPane.ERROR_MESSAGE);
-            } else {
-                Object responses = fileBrowsingFrame.mainFrame.client.receiveMessage().join();
-                if (responses instanceof ResultSetData) {
-                    ResultSetData resultSetData = (ResultSetData) responses;
-                    String[] columnNames = resultSetData.getColumnNames();
-                    List<String[]> data = resultSetData.getData();
-                    model.setColumnIdentifiers(columnNames);
-                    for (String[] row : data) {
-                        model.addRow(row);
+        CompletableFuture.runAsync(() -> {
+                    try {
+                        fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> LIST_USER");
+                        String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
+
+                        if (!"LIST_USER_SUCCESS".equals(response)) {
+                            handleError("Failed to list users", "Failed to refresh user list.");
+                        } else {
+                            Object responses = fileBrowsingFrame.mainFrame.client.receiveMessage().join();
+                            handleSuccess(responses, model);
+                        }
+                    } catch (IOException e) {
+                        handleError(e.getMessage(), "Failed to refresh user list.");
                     }
-                    JOptionPane.showMessageDialog(null, "Refresh success!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                    System.out.println("Refresh success!");
+                }).thenRunAsync(this::updateUI, SwingUtilities::invokeLater)
+                .exceptionally(ex -> {
+                    handleError("An error occurred during refreshing the user list.", "Attention");
+                    return null;
+                });
+    }
+
+
+    private void handleError(String errorMessage, String dialogTitle) {
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(null, errorMessage, dialogTitle, JOptionPane.INFORMATION_MESSAGE);
+        });
+    }
+
+    private void handleSuccess(Object responses, DefaultTableModel model) {
+        if (responses instanceof ResultSetData) {
+            ResultSetData resultSetData = (ResultSetData) responses;
+            final String[] columnNames = resultSetData.getColumnNames();
+            final List<String[]> data = resultSetData.getData();
+
+            SwingUtilities.invokeLater(() -> {
+                model.setColumnIdentifiers(columnNames);
+                for (String[] row : data) {
+                    model.addRow(row);
                 }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Failed to refresh user list.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Refresh success!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                System.out.println("Refresh success!");
+            });
         }
+    }
+
+    private void updateUI() {
         packColumns(userShowTable);
         centerAlignCells(userShowTable);
         userShowTable.revalidate();

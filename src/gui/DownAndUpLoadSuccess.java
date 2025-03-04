@@ -20,11 +20,8 @@ public class DownAndUpLoadSuccess {
         successDialog.add(messageLabel, BorderLayout.CENTER);
 
         // 设置定时器，在2秒后自动关闭对话框
-        Timer timer = new Timer(1000, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                successDialog.dispose(); // 关闭对话框
-            }
+        Timer timer = new Timer(2000, e -> {
+            successDialog.dispose(); // 关闭对话框
         });
         // 只执行一次
         timer.setRepeats(false);

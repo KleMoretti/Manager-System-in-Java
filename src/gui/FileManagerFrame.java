@@ -10,6 +10,7 @@ import javax.swing.text.StyleContext;
 import java.awt.*;
 import java.io.*;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Locale;
 
 public class FileManagerFrame {
@@ -60,17 +61,50 @@ public class FileManagerFrame {
             System.out.println("File does not exist!");
             return false;
         }
-        try  {
-            fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> FILE_UPLOAD" + " " + NumberInFileManagerFrame + " " + fileBrowsingFrame.mainFrame.user.getName() + " " +
-                    new Timestamp(System.currentTimeMillis()) + " " + DescriptionInFileManagerFrame + " " + selectedFile.getAbsolutePath()
-                    + " " + selectedFile.getName());
+        try {
+            //发送必要数据
+            fileBrowsingFrame.mainFrame.client.sendMessage("CLIENT>>> FILE_UPLOAD" + " "
+                    + NumberInFileManagerFrame + " "
+                    + fileBrowsingFrame.mainFrame.user.getName() + " "
+                    + new Timestamp(System.currentTimeMillis()) + " "
+                    + DescriptionInFileManagerFrame);
+            //文件名
+            fileBrowsingFrame.mainFrame.client.sendMessage(selectedFile.getName());
+            // Check if file ID already exists on the server
             String response = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
-            System.out.println("Response from server: " + response);
-            if ("UPLOAD_SUCCESS".equals(response)) {
+            if ("ID_ALREADY_EXISTS".equals(response)) {
+                JOptionPane.showMessageDialog(null, "ID already exists.");
+                System.err.println("ID already exists.");
+                return false;
+            } else if ("NONE_SAME_ID".equals(response)) {
+                // Start sending file content
+                try (FileInputStream fis = new FileInputStream(selectedFile.getAbsolutePath())) {
+                    byte[] buffer = new byte[8192];  // Increase buffer size for efficiency
+                    int bytesRead;
+                    // Send file content in chunks
+                    while ((bytesRead = fis.read(buffer)) != -1) {
+                        fileBrowsingFrame.mainFrame.client.sendBytes(buffer, bytesRead);
+                    }
+
+                } catch (IOException e) {
+                    System.err.println("Error reading file: " + e.getMessage());
+                    return false;
+                }
+                // Indicate end of file transfer
+                fileBrowsingFrame.mainFrame.client.sendMessage("FILE_UPLOAD_END");
+            }
+
+            // Get the final response from the server
+            String responses = fileBrowsingFrame.mainFrame.client.receiveMessage().join().toString();
+            System.out.println("Response from server: " + responses);
+            if ("UPLOAD_SUCCESS".equals(responses)) {
                 new DownAndUpLoadSuccess();
                 return true;
-            } else {
+            } else if ("UPLOAD_FAILED".equals(responses)) {
                 System.err.println("Upload failed.");
+                return false;
+            } else {
+                System.err.println("Unknown error.");
                 return false;
             }
         } catch (IOException ex) {
@@ -150,6 +184,7 @@ public class FileManagerFrame {
     public JLabel getSelectedFileLabel() {
         return selectedFileLabel;
     }
+
     public void setNumber(String number) {
         this.NumberInFileManagerFrame = number;
     }
